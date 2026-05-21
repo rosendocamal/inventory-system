@@ -1,46 +1,78 @@
-from product import Product
-from storage.storage_manager import StorageManager
+from .product import Product
+# from storage.storage_manager import StorageManager
 
 class Inventory:
-    def __init__(self, storage: StorageManager) -> None:
-        self.storage_manager = storage
+    def __init__(self) -> None:
+        self.products: dict[int, Product] = {}
 
-    def add_product(self, product: Product):
-        new_product: dict[str, str | int | float] = {
-            'type': 'product',
-            'code': product.code,
-            'name': product.name,
-            'description': product.description,
-            'price': product.price,
-            'unity': product.unity
-        }
-        if not self.search_product(product.code):
-            self.storage_manager.save(new_product)
-        else:
-            # alert: the product existed
-            pass
+    def add_product(self, product: Product) -> bool:
+        if not isinstance(product, Product):
+            return False
+        
+        try:
+            if product.code in self.products:
+                return False
+            """
+            info_product: dict[str, str | int | float] = {
+                'type': 'product',
+                'code': product.code,
+                'name': product.name,
+                'description': product.description,
+                'quantity': product.quantity,
+                'price': product.price,
+                'unity': product.unity
+            }
+            """
+        except AttributeError as e:
+            return False
+        
+        self.products[product.code] = product
+        return True
 
-    def del_product(self, code: int) -> None:
-        if not self.search_product(code):
-            # the product 
-            pass
-        self.storage_manager.delete(code)
+    def del_product(self, code: int) -> bool:
+        if code not in self.products:
+            return False
+        
+        if self.products[code].quantity != 0:
+            return False
+        
+        self.products.pop(code)
+        return True
 
-    def update_stock(self, code: int, quantity: int) -> None:
-        self.storage_manager.update(code, quantity)
+    def update_stock(self, code: int, quantity: int) -> bool:
+        if code not in self.products:
+            return False
+        
+        self.products[code].update_quantity(quantity)
+        return True
 
-    def search_product(self, code: int) -> None:
-        self.storage_manager.view(code)
+    def search_product(self, code: int) -> bool:
+        if code not in self.products:
+            return False
+        
+        print(self.products[code])
+        return True
 
-    def search_by_name(self, name: str) -> None:
-        self.storage_manager.view(name)
+    def search_by_name(self, name: str) -> bool:
+        for product in self.products.values():
+            if product.name == name:
+                print(product)
+                return True
+
+        return False
 
     def total_inventory_value(self) -> None:
-        self.storage_manager.view()
+        total_value: float = 0
+
+        for product in self.products.values():
+            total_value += product.total_value()
+        
+        print(total_value)
 
     def list_products(self) -> None:
-        all_products: dict = self.storage_manager.view()
+        print(self.products.values())
         
-
     def low_stock_products(self) -> None:
-        self.storage_manager.view()
+        for product in self.products.values():
+            if 0 <= product.quantity <= 15:
+                print(product)
