@@ -1,2 +1,2 @@
-from .product import Product
+from .models import Product, Transaction
 from .inventory import Inventory

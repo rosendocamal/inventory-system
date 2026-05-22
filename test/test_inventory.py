@@ -1,4 +1,4 @@
-from core.product import Product
+from core.models import Product
 from core.inventory import Inventory
 
 test_inventory = Inventory()
@@ -8,7 +8,7 @@ def test_add_product():
     test_product_2: Product = Product(123123123, 'SECOND PRODUCT', 'THIS IS A PRODUCT', 12.23, 50, 'GR')
     test_product_3: Product = Product(123123124, 'NAME', 'THIS', 12, 12, 'CJ')
     result_1 = test_inventory.add_product(test_product_1)
-    result_2 = test_inventory.add_product(123243)
+    result_2 = test_inventory.add_product(123243) # type: ignore
     result_3 = test_inventory.add_product(test_product_2)
     result_4 = test_inventory.add_product(test_product_3)
 

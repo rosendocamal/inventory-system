@@ -1,9 +1,11 @@
-from .product import Product
+import datetime
+from .models import Product, Transaction
 # from storage.storage_manager import StorageManager
 
 class Inventory:
     def __init__(self) -> None:
         self.products: dict[int, Product] = {}
+        self.transactions: dict[int, Transaction] = {}
 
     def add_product(self, product: Product) -> bool:
         if not isinstance(product, Product):
@@ -12,21 +14,12 @@ class Inventory:
         try:
             if product.code in self.products:
                 return False
-            """
-            info_product: dict[str, str | int | float] = {
-                'type': 'product',
-                'code': product.code,
-                'name': product.name,
-                'description': product.description,
-                'quantity': product.quantity,
-                'price': product.price,
-                'unity': product.unity
-            }
-            """
+
         except AttributeError as e:
             return False
         
         self.products[product.code] = product
+        self.transactions[int(datetime.datetime.now().strftime('%Y%m%d%H%M%S%f'))] = Transaction('ADD PRODUCT', product.code)
         return True
 
     def del_product(self, code: int) -> bool:
@@ -37,6 +30,7 @@ class Inventory:
             return False
         
         self.products.pop(code)
+        self.transactions[int(datetime.datetime.now().strftime('%Y%m%d%H%M%S%f'))] = Transaction('DELETE PRODUCT', code)
         return True
 
     def update_stock(self, code: int, quantity: int) -> bool:
@@ -44,6 +38,7 @@ class Inventory:
             return False
         
         self.products[code].update_quantity(quantity)
+        self.transactions[int(datetime.datetime.now().strftime('%Y%m%d%H%M%S%f'))] = Transaction('UPDATE STOCK', code)
         return True
 
     def search_product(self, code: int) -> bool:
