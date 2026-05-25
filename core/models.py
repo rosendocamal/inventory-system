@@ -1,13 +1,14 @@
 import datetime
 
 class Product:
+
     def __init__(self, code: int, name: str, description: str, price: float, quantity: int, unity: str) -> None:
         self.code = code
-        self.name = name
-        self.description = description
+        self.name = name.upper()
+        self.description = description.upper()
         self.price = price
         self.quantity = quantity
-        self.unity = unity
+        self.unity = unity.upper()
 
     def __str__(self) -> str:
         return f'{self.code:13} | {self.name[: 36 if len(self.name) >= 36 else len(self.name) - 1]:<36} | {self.quantity:5} {self.unity:<3}'
@@ -15,7 +16,7 @@ class Product:
     def total_value(self) -> float:
         return self.quantity * self.price
 
-    def update_quantity(self, quantity: int) -> None:
+    def update_quantity(self, quantity: int = 0) -> None:
         self.quantity += quantity
 
     def to_dict(self) -> dict[str, str | int | float]:
@@ -33,7 +34,7 @@ class Transaction:
     def __init__(self, transaction_type: str, product_code: int) -> None:
         self.type = transaction_type
         self.product_code = product_code
-        self.transaction_date = datetime.datetime.now
+        self.transaction_date = datetime.datetime.now()
 
     def __str__(self) -> str:
         return f'{self.type[: 13 if len(self.type) >= 13 else len(self.type) - 1]:<13} | {self.product_code:13} | {self.transaction_date.strftime('%Y/%m/%d %H:%M:%S')}'

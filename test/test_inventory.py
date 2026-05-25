@@ -4,9 +4,9 @@ from core.inventory import Inventory
 test_inventory = Inventory()
 
 def test_add_product():
-    test_product_1: Product = Product(123123123, 'NAME PRODUCT', 'THIS IS A PRODUCT', 12.32, 50, 'PZ')
-    test_product_2: Product = Product(123123123, 'SECOND PRODUCT', 'THIS IS A PRODUCT', 12.23, 50, 'GR')
-    test_product_3: Product = Product(123123124, 'NAME', 'THIS', 12, 12, 'CJ')
+    test_product_1: Product = Product(1231231231234, 'NAME PRODUCT', 'THIS IS A PRODUCT', 12.32, 50, 'PZ')
+    test_product_2: Product = Product(1231231231234, 'SECOND PRODUCT', 'THIS IS A PRODUCT', 12.23, 50, 'GR')
+    test_product_3: Product = Product(1231231241235, 'NAME', 'THIS', 12, 12, 'CJ')
     result_1 = test_inventory.add_product(test_product_1)
     result_2 = test_inventory.add_product(123243) # type: ignore
     result_3 = test_inventory.add_product(test_product_2)
@@ -26,9 +26,9 @@ def test_del_product():
     assert result_2 is False
 
 def test_update_stock():
-    result_1 = test_inventory.update_stock(123123123, -134124124132413241234)
+    result_1 = test_inventory.update_stock(1231231231234, -134124124132413241234)
     result_2 = test_inventory.update_stock(0, 123)
-    result_3 = test_inventory.update_stock(123123124, 1234)
+    result_3 = test_inventory.update_stock(1231231241235, 1234)
     result_4 = test_inventory.update_stock(int(), int())
 
     assert result_1 is True
@@ -37,7 +37,7 @@ def test_update_stock():
     assert result_4 is False
 
 def test_search_product():
-    result_1 = test_inventory.search_product(123123123)
+    result_1 = test_inventory.search_product(1231231231234)
     result_2 = test_inventory.search_product(int())
 
     assert result_1 is True
