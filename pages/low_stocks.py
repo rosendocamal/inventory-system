@@ -7,7 +7,7 @@ st.set_page_config(
 )
 
 st.write('# Productos con stock bajo')
-st.sidebar.header('Productos con bajo stock')
+st.sidebar.info('Productos con bajo stock')
 
 with st.form('list_products'):
     submitted = st.form_submit_button(

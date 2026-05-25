@@ -1,12 +1,9 @@
 import streamlit as st
-import datetime
 
 st.set_page_config(
     page_title='Sistema de Inventario',
     page_icon=':material/edit:'
 )
-
-st.sidebar.info(f'{datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}')
 
 pages = {
     "Home": [

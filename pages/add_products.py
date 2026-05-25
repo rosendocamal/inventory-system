@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 st.markdown('# Añadir producto')
-st.sidebar.header('Añadir producto')
+st.sidebar.info('Añadir producto')
 
 with st.form('new_products'):
     col1, col2, col3 = st.columns(3)

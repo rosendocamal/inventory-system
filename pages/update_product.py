@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 st.markdown('# Actualizar stock producto')
-st.sidebar.header('Actualizar stock producto')
+st.sidebar.info('Actualizar stock producto')
 
 with st.form('add_prod'):
     col1, col2 = st.columns(2)

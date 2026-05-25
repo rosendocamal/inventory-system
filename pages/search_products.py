@@ -13,7 +13,7 @@ if 'product_found' not in st.session_state:
     st.session_state.product_found = None
 
 st.markdown('# Buscar producto')
-st.sidebar.header('Buscar producto')
+st.sidebar.info('Buscar producto')
 
 col1, col2 = st.columns(2)
 

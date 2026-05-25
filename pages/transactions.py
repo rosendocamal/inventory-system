@@ -7,7 +7,7 @@ st.set_page_config(
 )
 
 st.write('# Historial de Transacciones')
-st.sidebar.header('Transacciones')
+st.sidebar.info('Transacciones')
 
 with st.form('list_products'):
     submitted = st.form_submit_button(

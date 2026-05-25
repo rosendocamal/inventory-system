@@ -14,7 +14,7 @@ if 'product_found' not in st.session_state:
     st.session_state.product_found = None
 
 st.markdown('# Eliminar producto')
-st.sidebar.header('Eliminar producto')
+st.sidebar.info('Eliminar producto')
 
 with st.form('search_product'):
     st.write('### Buscar producto')
