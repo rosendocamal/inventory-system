@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import pandas as pd
 from core.models import Product
-from main import db as inventory
+from pages.home import inventory
 
 st.set_page_config(
     page_title='Actualizar stock producto',
@@ -12,7 +12,7 @@ st.set_page_config(
 st.markdown('# Actualizar stock producto')
 st.sidebar.header('Actualizar stock producto')
 
-with st.form('add_product'):
+with st.form('add_prod'):
     col1, col2 = st.columns(2)
     with col1:
         code = st.number_input (

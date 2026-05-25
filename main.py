@@ -1,17 +1,17 @@
 import streamlit as st
-from core.inventory import Inventory
-
+import datetime
 
 st.set_page_config(
     page_title='Sistema de Inventario',
     page_icon=':material/edit:'
 )
 
-# st.write('# Sistema de Inventario')
-st.sidebar.success('Selecciona una opción.')
-
+st.sidebar.info(f'{datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}')
 
 pages = {
+    "Home": [
+        st.Page('pages/home.py', title='Inicio', icon=':material/home:'),
+    ],
     "Productos": [
         st.Page("pages/add_products.py", title="Agregar producto", icon=':material/add_2:'),
         st.Page("pages/del_products.py", title='Eliminar producto', icon=':material/delete:'),
@@ -24,21 +24,6 @@ pages = {
         st.Page("pages/transactions.py", title="Historial", icon=':material/contract:')
         ],
 }
-
-
-# st.markdown(
-#     '''
-#     Este Sistema de Inventario le facilitará gestionar su inventario,
-#     desde añadir, eliminar, listar y buscar productos que usted mismo
-#     tenga en sus manos.
-#     **Seleccione en la sección lateral la opción de su preferencia** y 
-#     empieza a explorar esta increíble herramienta.
-#     ## ¿Quiere aprender más?
-#     - Consulte el repositorio en GitHub.
-#     '''
-# )
-
-db = Inventory()
 
 pg = st.navigation(pages)
 pg.run()

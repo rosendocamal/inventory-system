@@ -1,5 +1,5 @@
 import streamlit as st
-from main import db as inventory
+from pages.home import inventory
 
 st.set_page_config(
     page_title='Listar productos',

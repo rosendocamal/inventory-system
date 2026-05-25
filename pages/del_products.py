@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from core.models import Product
-from main import db as inventory
+from pages.home import inventory
 
 import pandas as pd
 
@@ -79,12 +79,12 @@ if st.session_state.product_found is not None:
 
         if submitted_secondary:
             with st.spinner('Eliminando producto...', show_time=False):
-                product_was_del: bool = inventory.del_product(product.code)
+                product_was_del: bool | str = inventory.del_product(product.code)
                 time.sleep(2)
-            if product_was_del:
+            if not isinstance(product_was_del, str):
                 st.success('El producto ha sido eliminado.')
                 st.session_state.product_found = None
                 time.sleep(3)
                 st.rerun(scope='app')
             else:
-                st.error('El producto no ha sido eliminado.')
+                st.error(f'El producto no ha sido eliminado: {product_was_del}')

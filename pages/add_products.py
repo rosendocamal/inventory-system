@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from core.models import Product
-from main import db as inventory
+from pages.home import inventory
 
 st.set_page_config(
     page_title='Añadir productos',
@@ -11,7 +11,7 @@ st.set_page_config(
 st.markdown('# Añadir producto')
 st.sidebar.header('Añadir producto')
 
-with st.form('add_product'):
+with st.form('new_products'):
     col1, col2, col3 = st.columns(3)
     with col1:
         code = st.number_input (
@@ -98,10 +98,7 @@ with st.form('add_product'):
         else:
             my_bar.empty()
             if not isinstance(product_was_saved, str):
-                st.success('El producto ha sido guardado', icon=None, width='stretch')
-                st.write(product_was_saved)
-                
+                st.success('El producto ha sido guardado.', icon=None, width='stretch')
             else:
-                st.warning(product_was_saved)
-                st.error('El producto no ha sido guardado', icon=None)
+                st.error(f'El producto no ha sido guardado: {product_was_saved}', icon=None)
                 

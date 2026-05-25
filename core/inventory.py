@@ -16,8 +16,6 @@ class Inventory:
         self.transactions: dict[str, Transaction] = {}
 
     def add_product(self, product: Product) -> bool | str:
-        # if not isinstance(product, Product):
-        #     return f'No es clase de Producto {type(product)}\n{product.to_dict()}'
         try:
             if product.code in self.products:
                 return 'El producto ya existe.'
@@ -27,11 +25,14 @@ class Inventory:
         self.transactions[datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')] = Transaction('ADD PRODUCT', product.code)
         return True
 
-    def del_product(self, code: int) -> bool:
+    def del_product(self, code: int) -> bool | str:
         if code not in self.products:
-            return False
+            return 'El producto no existe.'
         if self.products[code].quantity != 0:
-            return False
+            if self.products[code].quantity < 0:
+                return 'El producto tiene existencias negativas.'
+            else:
+                return 'El producto tiene existencias positivas'
         self.products.pop(code)
         self.transactions[datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')] = Transaction('DELETE PRODUCT', code)
         return True
