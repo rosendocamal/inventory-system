@@ -1,25 +1,25 @@
 import streamlit as st
-
 import time
-
 from core.models import Product
-from main import sys_inv as inventory
-
+from main import db as inventory
 
 st.set_page_config(
     page_title='Añadir productos',
-    page_icon=':material/add_circle:'
+    page_icon=':material/add_2:'
 )
-st.markdown('# Añadir productos')
-st.sidebar.header('Añadir productos')
+
+st.markdown('# Añadir producto')
+st.sidebar.header('Añadir producto')
+
 with st.form('add_product'):
     col1, col2, col3 = st.columns(3)
     with col1:
         code = st.number_input (
             label='CÓDIGO:',
             placeholder='Código del producto',
-            step=10000000,
-            value=None,
+            step=10**12, # temporal steps
+            min_value=10**12,
+            max_value=10**13 - 1,
         )
         name = st.text_input(
             label='NOMBRE:',
@@ -38,51 +38,70 @@ with st.form('add_product'):
     with col3:
         quantity = st.number_input(
             label='CANTIDAD:',
-            step=10000,
+            step=100,
             value=0
             )
         unity = st.selectbox(
             'UNIDAD:',
-            ('PZ', 'CJ', 'GR', 'KG', 'ML', 'LT'),
+            ('PZ', 'CJ', 'GR', 'KG', 'ML', 'LT', 'M'),
             placeholder='Unidad de medida'
         )
+
     submitted = st.form_submit_button(
         label='Guardar',
         type='primary',
         width='stretch'
         )
+    
     if submitted:
         if not code:
-            st.warning('Por favor, ingrese el código del producto.')
+            st.warning('Código del producto no ingresado.')
             st.stop()
+
+        if len(str(code)) != 13:
+            st.warning('El código debe tener únicamente 13 dígitos.')
+            st.stop()
+
         if not name:
-            st.warning('Por favor, ingrese el nombre del producto.')
+            st.warning('Ingrese el nombre del producto')
             st.stop()
+
         if not description:
-            st.warning('Por favor, ingrese la descripción del producto.')
+            st.warning('Ingrese la descripción del producto.')
             st.stop()
+
         if not price:
-            st.warning('Por favor, ingrese el precio del producto.')
+            st.warning('Ingrese el precio del producto.')
             st.stop()
-        if not quantity:
-            st.warning('Por favor, ingrese la cantidad del producto.')
-            st.stop()
+
+        # if not quantity:
+        #     st.warning('Ingrese la cantidad del producto.')
+        #     st.stop()
+
         if not unity:
-            st.warning('Por favor, ingrese la unidad de medida del producto.')
+            st.warning('Ingrese la unidad de medida del producto.')
             st.stop()
+
         product = Product(code, name, description, price, quantity, unity)
-        
-        is_save: bool = inventory.add_product(product)
+
+        st.dataframe(product.to_dict())
+
+        product_was_saved: bool | str = inventory.add_product(product)
 
         progress_text = 'Guardando...'
         my_bar = st.progress(0, text=progress_text)
-        for percent_complete in range(6):
+
+        for percent_complete in range(5):
             time.sleep(0.01)
-            my_bar.progress(percent_complete * 20, text=progress_text)
-            time.sleep(1)
+            my_bar.progress(percent_complete * 25, text=progress_text)
+            time.sleep(0.20)
         else:
             my_bar.empty()
-            if is_save:
+            if not isinstance(product_was_saved, str):
                 st.success('El producto ha sido guardado', icon=None, width='stretch')
+                st.write(product_was_saved)
+                
             else:
+                st.warning(product_was_saved)
                 st.error('El producto no ha sido guardado', icon=None)
+                
