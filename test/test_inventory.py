@@ -54,9 +54,3 @@ def test_total_inventory_value():
     result_1 = test_inventory.total_inventory_value()
 
     assert result_1 is not False
-
-def test_list_products():
-    pass
-
-def test_low_stocks_products():
-    pass
