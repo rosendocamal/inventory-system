@@ -1,92 +1,131 @@
 import sqlite3
 
 class DatabaseManager:
-    def __init__(self, path) -> None:
+    def __init__(self, path: str) -> None:
         self.path: str = path
-        self.initialize_database()
-
-    def get_connection(self) -> sqlite3.Connection:
-        connection: sqlite3.Connection = sqlite3.connect(self.path)
-        connection.row_factory = sqlite3.Row
-        return connection
-
-    def keep_connection(self, sql_statement: str, **kwargs):
-        try:
-            with self.get_connection() as connection:
-                connection.execute(sql_statement, **kwargs)
-        except sqlite3.OperationalError as error:
-            pass
-        else:
-            pass
-        finally:
-            # I'd add logs here
-            pass 
+        self.connection: sqlite3.Connection = sqlite3.connect(self.path)
+        self.connection.row_factory = sqlite3.Row
+        self.create_tables()
                 
-    def initialize_database(self):
-        create_tables: str ='''
-            CREATE TABLE IF NOT EXISTS products (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                code_product    INTEGER UNIQUE NOT NULL,
-                type            TEXT NOT NULL,
-                quantity        INTEGER NOT NULL,
-                date            TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS transactions (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                code        INTEGER UNIQUE NOT NULL,
-                name        TEXT NOT NULL,
+    def create_tables(self):
+        statements: list[str] = [
+            '''PRAGMA foreign_keys = ON;''',
+            
+            '''CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code INTEGER UNIQUE NOT NULL,
+                name TEXT NOT NULL,
                 description TEXT NOT NULL,
-                price       REAL NOT NULL,
-                quantity    INTEGER NOT NULL,
-                unity        TEXT NOT NULL
-            );
-        '''
+                quantity INTEGER NOT NULL,
+                price REAL NOT NULL,
+                id_unity INTEGER NOT NULL,
 
-    def insert_data(self, data: dict):
-        '''
-        esto debe recibir un diccionario de la siguiente forma (ejemplo):
-        {
-            "type": "product",
-            "code": 12341241234,
-            "name": "REFRESCO COLA",
-            "description": esto es una bebida refrescante,
-            "price": 1341234
-            "unit": "PZ"
+                FOREIGN KEY (id_unity) REFERENCES units(unity)
+            );''',
+
+            '''CREATE TABLE IF NOT EXISTS units (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                unity TEXT UNIQUE KEY NOT NULL,    
+            );'''
+
+            '''CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transaction_type TEXT NOT NULL,
+                affected_product_code INTEGER NOT NULL,
+                transaction_date TEXT NOT NULL,
+                
+                FOREING KEY (transaction_type) REFERENCES types_transaction(id),
+                FOREING KEY (affected_id_product) INTEGER products(id)
+            );''',
+
+            '''INSERT INTO units (unity) VALUES ('PZ');
+            INSERT INTO units (unity) VALUES ('CJ');
+            INSERT INTO units (unity) VALUES ('GR');
+            INSERT INTO units (unity) VALUES ('KG');
+            INSERT INTO units (unity) VALUES ('ML');
+            INSERT INTO units (unity) VALUES ('LT');
+            INSERT INTO units (unity) VALUES ('M');'''
+        ]
+
+        try:
+            with self.connection as connection:
+                cursor: sqlite3.Cursor = connection.cursor()
+                for statement in statements:
+                    cursor.execute(statement)
+                connection.commit()
+
+                #prox feature: add logs
+                print('Las tablas han sido creadas con éxito.')
+        except sqlite3.OperationalError:
+            # prox feature: add logs
+                print('Las tablas no han sido creadas.')
+            
+    def insert_data_in_products(self, data: dict) -> dict[str, bool]:
+        statements: dict[str, str] = {
+            'search_by_code': '''SELECT code FROM products WHERE code = ?;''',
+
+            'search_by_id_unity': '''SELECT id FROM units WHERE unity = ?;''',
+
+            'insert_info_product': '''INSERT INTO products (code, name, description, quantity, price, id_unity) VALUES (?, ?, ?, ?, ?, ?);'''
         }
-        '''
 
-        statements = {
-            'products': '''INSERT INTO products (code, name, description, price, quantity, unity) (?, ?, ?, ?, ?, ?);''',
-            'transactions': '''INSERT INTO transactions (code_product, type, quantity, date) (?, ?, ?, ?);'''
+        try:
+            with self.connection as connection:
+                cursor: sqlite3.Cursor = connection.cursor()
+
+                code, name, description, quantity, price, unity = data['code'], data['name'], data['description'], data['quantity'], data['price'], data['unity']
+
+                cursor.execute(statements['search_by_code'], code)
+                id_code = cursor.fetchall()[0]
+
+                if id_code == code:
+                    return {'status': False, 'if_code_exists': True, 'if_data_complete': False}
+
+                cursor.execute(statements['search_by_id_unity'], unity)
+                id_unity = cursor.fetchall()[0]
+                cursor.execute(statements['insert_info_product'], (code, name, description, quantity, price, id_unity))
+
+                connection.commit()
+
+                #prox feature: add logs
+                print('Los datos han sido insertados correctamente a «products».')
+                return {'status': True, 'if_code_exists': False, 'if_data_complete': True}
+        except sqlite3.OperationalError, KeyError:
+            # prox feature: add logs
+                print('Los datos no han sido insertados a «products».')
+                return {'status': True, 'if_code_exists': False, 'if_data_complete': False}
+
+    def insert_data_in_transactions(self, data: dict):
+        statements: dict[str, str] = {
+            'search_by_id_type': '''SELECT id FROM units WHERE unity = ?;''',
+
+            'search_by_id_code': '''SELECT id FROM products WHERE code = ?;''',
+
+            'insert_info_transaction': '''INSERT INTO transactions (transaction_type, affected_product_code, transaction_date) VALUES (?, ?, ?);'''
         }
-        insert_statement: str = statements[data['type']]
-        self.keep_connection(insert_statement, params=())
 
-    def read_data(self):
-        pass
+        try:
+            with self.connection as connection:
+                cursor: sqlite3.Cursor = connection.cursor()
 
-    def update_data(self):
-        pass
+                transaction_type, product_code, transaction_date = data['transaction_type'], product_code['product_code'], data['transaction_date']
+                cursor.execute(statements['search_by_id_type'], transaction_type)
+                id_transaction_type = cursor.fetchall()[0]
+                cursor.execute(statements['search_by_id_code'], product_code)
+                id_product_code = cursor.fetchall()[0]
+                cursor.execute(statements['insert_info_transaction'], (id_transaction_type, id_product_code, transaction_date))
 
-    def delete_data(self):
-        pass
+                connection.commit()
 
-class StorageManager:
-    def __init__(self, database: DatabaseManager) -> None:
-        self.database = database
+                #prox feature: add logs
+                print('Los datos han sido insertados correctamente a «transactions».')
+        except sqlite3.OperationalError, KeyError:
+            # prox feature: add logs
+                print('Los datos no han sido insertados a «transactions».')
 
-    def save(self, data) -> None:
-        self.database.insert_data(data)
-
-    def delete(self) -> None:
-        pass
-
-    def update(self) -> None:
-        pass
-
-    def view(self):
-        pass
-
-
-# quizás use math case con diccionarios (con tipos type()) para analizar
+def delete_data_in_products(self):
+    """El futuro de la función:
+    1) Buscar que el código exista y avisar si o no existe,
+    2) Verificar que el producto no tenga stock, que tenga 0 y avisar si diferente a 0,
+    3) Realizar las consultas para eliminar el producto
+    """
