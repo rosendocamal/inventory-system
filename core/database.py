@@ -89,7 +89,7 @@ class DatabaseManager:
         Resultado:
         - result (dict[str, bool | str]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
             de resultado o error ('message': str). El estado es True si la operación fue exitosa y False si fue
-            lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario.
+            lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. 
         """
         result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
         if data not in self.products:
@@ -106,7 +106,29 @@ class DatabaseManager:
         result['message'] = 'Producto eliminado con éxito.'
         return result
         
+    def search_code_in_products(self, data: int) -> dict[str, bool | str | dict[str, str | int | float]]:
+        """
+        Busca el producto indicado mediante el código de producto dado.
+
+        Parámetro:
+        - data (int): El código de producto a buscar.
+
+        Resultado:
+        - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación fue exitosa y False si fue lo
+            contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
+            operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
+            corresponde con el parámetro indicado.
+        """
+        result: dict[str, bool | str | dict[str, str | int | float]] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        if data not in self.products:
+            result['message'] = 'Producto no encontrado: El código de producto no está registrado.'
+            return result
+
+        result['status'] = True
+        result['message'] = 'El producto ha sido encontrado con éxito.'
+        result['product'] = self.products[data]
+        return result
+
     def update_data_in_products(self):
-        pass
-    def query_data_in_products(self):
         pass

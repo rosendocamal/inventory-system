@@ -41,7 +41,7 @@ with st.form('search_product'):
             st.stop()
         progress_text = 'Buscando producto mediante código...'
         my_bar = st.progress(0, text=progress_text)
-        product: Product | bool = inventory.search_product(int(code))
+        product: Product | bool = inventory.search_by_code(int(code))
         for percent_complete in range(3):
             time.sleep(0.01)
             my_bar.progress(percent_complete * 50, text=progress_text)
