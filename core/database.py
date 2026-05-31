@@ -1,92 +1,112 @@
-import sqlite3
+import datetime
 
 class DatabaseManager:
-    def __init__(self, path) -> None:
-        self.path: str = path
-        self.initialize_database()
+    def __init__(self) -> None:
+        self.products: dict[int, dict[str, str | int | float]] = {
+            1000000000000: {
+                'type': 'product',
+                'code': 1000000000000,
+                'name': 'PRODUCT NAME 0',
+                'description': 'THIS IS A PRODUCT',
+                'quantity': 10000,
+                'price': 250.75,
+                'unity': 'PZ'
+            },
+            1000000000001: {
+                'type': 'product',
+                'code': 1000000000001,
+                'name': 'PRODUCT NAME 1',
+                'description': 'THIS IS A PRODUCT',
+                'quantity': 40000,
+                'price': 250.75,
+                'unity': 'PZ'
+            },
+            1000000000002: {
+                'type': 'product',
+                'code': 1000000000002,
+                'name': 'PRODUCT NAME 3',
+                'description': 'THIS IS A PRODUCT',
+                'quantity': 40000,
+                'price': 250.25,
+                'unity': 'PZ'
+            },
+            1000000000003: {
+                'type': 'product',
+                'code': 1000000000003,
+                'name': 'PRODUCT NAME 3',
+                'description': 'THIS IS A PRODUCT',
+                'quantity': 30000,
+                'price': 205.75,
+                'unity': 'KG'
+            }
+        }
+        self.transactions: dict[str, dict[str, str | int]] = {}
+    
+    def save_to_transactions(self, data: dict[str, str | int]) -> None:
+        """
+        Guarda las transacciones solicitadas para su incorporación al historial.
 
-    def get_connection(self) -> sqlite3.Connection:
-        connection: sqlite3.Connection = sqlite3.connect(self.path)
-        connection.row_factory = sqlite3.Row
-        return connection
+        Parámetro:
+        - data (dict): recibe un diccionario con la información y estructura adecuada
+            transacción (ver clase Transaction).
+        """
+        self.transactions[datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')] = data
+        
+    def save_to_products(self, data: dict) -> dict[str, bool | str]:
+        """
+        Guarda los nuevos productos del inventario.
 
-    def keep_connection(self, sql_statement: str, **kwargs):
+        Parámetro:
+        - data (dict): recibe un diccionario con la información y estructura de un producto
+            (ver clase Product)
+
+        Resultado:
+        - result (dict[str, bool | str]): retorna un diccionario sobre el estado (bool) y el mensaje
+            de resultado o error (str)
+        """
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+
         try:
-            with self.get_connection() as connection:
-                connection.execute(sql_statement, **kwargs)
-        except sqlite3.OperationalError as error:
-            pass
-        else:
-            pass
-        finally:
-            # I'd add logs here
-            pass 
-                
-    def initialize_database(self):
-        create_tables: str ='''
-            CREATE TABLE IF NOT EXISTS products (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                code_product    INTEGER UNIQUE NOT NULL,
-                type            TEXT NOT NULL,
-                quantity        INTEGER NOT NULL,
-                date            TEXT NOT NULL
-            );
+            if data['code'] in self.products:
+                result['message'] = 'Producto rechazado: El código de producto está registrado.'
+                return result
+        except KeyError:
+            result['message'] = 'Producto rechazado: Información del producto incompleta.'
+            return result
+        
+        self.products[data['code']] = data
+        result['status'] = True
+        result['message'] = 'Producto agregado con éxito.'
+        return result
+    
+    def delete_from_products(self, data: int) -> dict[str, bool | str]:
+        """
+        Elimina el producto del inventario indicado mediante el código de producto.
+        
+        Parámetro:
+        - data (int): El código de producto a eliminar.
 
-            CREATE TABLE IF NOT EXISTS transactions (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                code        INTEGER UNIQUE NOT NULL,
-                name        TEXT NOT NULL,
-                description TEXT NOT NULL,
-                price       REAL NOT NULL,
-                quantity    INTEGER NOT NULL,
-                unity        TEXT NOT NULL
-            );
-        '''
-
-    def insert_data(self, data: dict):
-        '''
-        esto debe recibir un diccionario de la siguiente forma (ejemplo):
-        {
-            "type": "product",
-            "code": 12341241234,
-            "name": "REFRESCO COLA",
-            "description": esto es una bebida refrescante,
-            "price": 1341234
-            "unit": "PZ"
-        }
-        '''
-
-        statements = {
-            'products': '''INSERT INTO products (code, name, description, price, quantity, unity) (?, ?, ?, ?, ?, ?);''',
-            'transactions': '''INSERT INTO transactions (code_product, type, quantity, date) (?, ?, ?, ?);'''
-        }
-        insert_statement: str = statements[data['type']]
-        self.keep_connection(insert_statement, params=())
-
-    def read_data(self):
+        Resultado:
+        - result (dict[str, bool | str]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación fue exitosa y False si fue
+            lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario.
+        """
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        if data not in self.products:
+                result['message'] = 'Producto no eliminado: El código de producto no está registrado.'
+                return result
+        product_quantity = int(self.products[data]['quantity'])
+        if product_quantity != 0:
+            result['message'] = 'Producto no eliminado: '
+            result['message'] += 'Posee inventario negativo.' if product_quantity < 0 else 'Posee inventario positivo.'
+            return result
+        
+        self.products.pop(data)
+        result['status'] = True
+        result['message'] = 'Producto eliminado con éxito.'
+        return result
+        
+    def update_data_in_products(self):
         pass
-
-    def update_data(self):
+    def query_data_in_products(self):
         pass
-
-    def delete_data(self):
-        pass
-
-class StorageManager:
-    def __init__(self, database: DatabaseManager) -> None:
-        self.database = database
-
-    def save(self, data) -> None:
-        self.database.insert_data(data)
-
-    def delete(self) -> None:
-        pass
-
-    def update(self) -> None:
-        pass
-
-    def view(self):
-        pass
-
-
-# quizás use math case con diccionarios (con tipos type()) para analizar

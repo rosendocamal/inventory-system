@@ -86,7 +86,7 @@ with st.form('new_products'):
 
         st.dataframe(product.to_dict())
 
-        product_was_saved: bool | str = inventory.add_product(product)
+        product_was_saved: dict[str, bool | str] = inventory.add_product(product)
 
         progress_text = 'Guardando...'
         my_bar = st.progress(0, text=progress_text)
@@ -97,8 +97,8 @@ with st.form('new_products'):
             time.sleep(0.20)
         else:
             my_bar.empty()
-            if not isinstance(product_was_saved, str):
-                st.success('El producto ha sido guardado.', icon=None, width='stretch')
+            if product_was_saved['status'] is True:
+                st.success(product_was_saved['message'], icon=None, width='stretch')
             else:
-                st.error(f'El producto no ha sido guardado: {product_was_saved}', icon=None)
+                st.error(product_was_saved['message'], icon=None, width='stretch')
                 

@@ -41,7 +41,8 @@ class Transaction:
     
     def to_dict(self) -> dict[str, str | int]:
         return {
-            'type': self.type,
+            'type': 'transaction',
+            'transaction': self.type,
             'product_code': self.product_code,
             'transaction_date': self.transaction_date.strftime('%Y/%m/%d %H:%M:%S')
         }

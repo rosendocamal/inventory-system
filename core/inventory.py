@@ -1,41 +1,30 @@
-import datetime
 from .models import Product, Transaction
-# from storage.storage_manager import StorageManager
 
 class Inventory:
-    def __init__(self) -> None:
-        self.products: dict[int, Product] = {
-            1000000000000: Product(1000000000000, 'PRODUCT 1', 'THIS IS A PRODUCT 1', 134.00, 50, 'PZ'),
-            1000000000001: Product(1000000000001, 'PRODUCT 2', 'THIS IS A PRODUCT 2', 134.00, 1, 'PZ'),
-            1000000000002: Product(1000000000002, 'PRODUCT 3', 'THIS IS A PRODUCT 3', 134.00, 2, 'PZ'),
-            1000000000003: Product(1000000000003, 'PRODUCT 4', 'THIS IS A PRODUCT 4', 134.00, 3, 'PZ'),
-            1000000000004: Product(1000000000004, 'PRODUCT 5', 'THIS IS A PRODUCT 5', 134.00, -34, 'PZ'),
-            1000000000005: Product(1000000000005, 'PRODUCT 6', 'THIS IS A PRODUCT 6', 134.00, 34, 'PZ'),
-            1000000000006: Product(1000000000006, 'PRODUCT 7', 'THIS IS A PRODUCT 7', 134.00, 62, 'PZ')
-            }
-        self.transactions: dict[str, Transaction] = {}
+    def __init__(self, storage) -> None:
+        self.database = storage
 
-    def add_product(self, product: Product) -> bool | str:
-        try:
-            if product.code in self.products:
-                return 'El producto ya existe.'
-        except AttributeError:
-            return 'El producto ha sido rechazado por información incompleta.'
-        self.products[product.code] = product
-        self.transactions[datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')] = Transaction('ADD PRODUCT', product.code)
-        return True
+    def add_product(self, product: Product) -> dict[str, bool | str]:
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
 
-    def del_product(self, code: int) -> bool | str:
-        if code not in self.products:
-            return 'El producto no existe.'
-        if self.products[code].quantity != 0:
-            if self.products[code].quantity < 0:
-                return 'El producto tiene existencias negativas.'
-            else:
-                return 'El producto tiene existencias positivas'
-        self.products.pop(code)
-        self.transactions[datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')] = Transaction('DELETE PRODUCT', code)
-        return True
+        info_product: dict[str, str | int | float] = product.to_dict()
+        info_insert: dict[str, bool | str] = self.database.save_to_products(info_product)
+        result['message'] = info_insert['message']
+
+        if info_insert['status'] is False:
+            info_transaction: dict[str, str | int] = Transaction('ADD FAILED PRODUCT', product.code).to_dict()
+            self.database.save_to_transactions(info_transaction)
+            return result
+        
+        result['status'] = True
+        info_transaction: dict[str, str | int] = Transaction('ADD PRODUCT', product.code).to_dict()
+        self.database.save_to_transactions(info_transaction)
+        
+        return result
+
+    def del_product(self, code: int) -> dict[str, bool | str]:
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        
 
     def update_stock(self, code: int, quantity: int = 0) -> bool:
         if code not in self.products:
