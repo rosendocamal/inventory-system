@@ -1,7 +1,6 @@
 import streamlit as st
 import time
 import pandas as pd
-from core.models import Product
 from pages.home import inventory
 
 st.set_page_config(
@@ -18,7 +17,7 @@ with st.form('add_prod'):
         code = st.number_input (
             label='CÓDIGO:',
             placeholder='Código del producto',
-            step=10**12, # temporal steps
+            step=1,
             min_value=10**12,
             max_value=10**13 - 1,
         )
@@ -28,7 +27,6 @@ with st.form('add_prod'):
             step=100,
             value=0
             )
-
 
     submitted = st.form_submit_button(
         label='Guardar',
@@ -48,19 +46,20 @@ with st.form('add_prod'):
         col3, col4 = st.columns(2)
 
         with col3:
-            product: Product | bool = inventory.search_product(int(code))
-            if not isinstance(product, bool):
-                st.success('Producto encontrado')
+            product: dict[str, bool | str | dict[str, str | int | float]] = inventory.search_by_code(code)
+            if product['status'] is True:
+                st.success(product['message'])
+                product_dict: dict[str, str | int | dict] = product['product']
                 product_df = pd.DataFrame(
                             {
-                                'PRODUCTO ENCONTRADO': [product.code, str(product.name), product.description, product.unity, product.quantity, product.price, product.total_value()],
+                                'PRODUCTO ENCONTRADO': [product_dict['code'], product_dict['name'], product_dict['description'], product_dict['unity'], product_dict['quantity'], product_dict['price']],
                             },
-                            index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD', 'VALOR INVENTARIO'],
+                            index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD'],
                         )
                 st.dataframe(product_df)
                 with col4:
                     time.sleep(0.2) 
-                    product_was_saved= inventory.update_stock(code, quantity)
+                    product_was_saved: dict[str, bool | str] = inventory.update_stock(code, quantity)
 
                     progress_text = 'Actualizando...'
                     my_bar = st.progress(0, text=progress_text)
@@ -71,17 +70,17 @@ with st.form('add_prod'):
                         time.sleep(0.5)
                     else:
                         my_bar.empty()
-                        if product_was_saved:
-                            st.success('El stock ha sido actualizado', icon=None, width='stretch')
+                        if product_was_saved['status'] is True:
+                            st.success(product_was_saved['message'], icon=None, width='stretch')
                             product_df = pd.DataFrame(
                                 {
-                                    'PRODUCTO ACTUALIZADO': [product.code, str(product.name), product.description, product.unity, product.quantity, product.price, product.total_value()],
+                                    'PRODUCTO ACTUALIZADO': [product_dict['code'], product_dict['name'], product_dict['description'], product_dict['unity'], product_dict['quantity'], product_dict['price']],
                                 },
-                                index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD', 'VALOR INVENTARIO'],
+                                index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD'],
                             )
                             st.dataframe(product_df)
                         else:
-                            st.error('El stock no se actualizó', icon=None)
+                            st.error(product_was_saved['message'], icon=None)
                         
             else:
-                st.warning('El producto no existe')
+                st.warning(product['message'])

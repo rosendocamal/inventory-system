@@ -17,26 +17,32 @@ with st.form('list_products'):
     )
     
     if submitted:
-        all_products = inventory.list_products()
-        st.write('### Total inventario: $', inventory.total_inventory_value())
+        info_list_products: dict[str, bool | str | list] = inventory.list_products()
 
-        product_df: dict [str, list[int | str | float]] = {
-                'CÓDIGO': [],
-                'NOMBRE': [],
-                'DESCRIPCIÓN': [],
-                'UNIDAD DE MEDIDA': [],
-                'EXISTENCIAS': [],
-                'PRECIO POR UNIDAD': [],
-                'VALOR EXISTENCIAS': [],
-            }
+        st.write('### Total inventario: $', inventory.total_inventory_value()['stock'])
 
-        for product in all_products:
-            product_df['CÓDIGO'].append(product.code)
-            product_df['NOMBRE'].append(product.name)
-            product_df['DESCRIPCIÓN'].append(product.description)
-            product_df['UNIDAD DE MEDIDA'].append(product.unity)
-            product_df['EXISTENCIAS'].append(product.quantity)
-            product_df['PRECIO POR UNIDAD'].append(product.unity)
-            product_df['VALOR EXISTENCIAS'].append(product.total_value())
+        if info_list_products['status'] is False:
+            st.info(info_list_products['message'])
+        else:
+            all_products: list = info_list_products['products']
 
-        st.dataframe(product_df)
+            product_df: dict [str, list[int | str | float]] = {
+                    'CÓDIGO': [],
+                    'NOMBRE': [],
+                    'DESCRIPCIÓN': [],
+                    'UNIDAD DE MEDIDA': [],
+                    'EXISTENCIAS': [],
+                    'PRECIO POR UNIDAD': [],
+                    'VALOR EXISTENCIAS': [],
+                }
+
+            for product in all_products:
+                product_df['CÓDIGO'].append(product['code'])
+                product_df['NOMBRE'].append(product['name'])
+                product_df['DESCRIPCIÓN'].append(product['description'])
+                product_df['UNIDAD DE MEDIDA'].append(product['unity'])
+                product_df['EXISTENCIAS'].append(product['quantity'])
+                product_df['PRECIO POR UNIDAD'].append(product['price'])
+                product_df['VALOR EXISTENCIAS'].append(int(product['quantity']) * float(product['price']))
+
+            st.dataframe(product_df)

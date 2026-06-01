@@ -1,6 +1,9 @@
 import datetime
 
 class DatabaseManager:
+    """
+    Clase principal para la gestión de la base de datos.
+    """
     def __init__(self) -> None:
         self.products: dict[int, dict[str, str | int | float]] = {
             1000000000000: {
@@ -129,6 +132,148 @@ class DatabaseManager:
         result['message'] = 'El producto ha sido encontrado con éxito.'
         result['product'] = self.products[data]
         return result
+    
+    def search_name_in_products(self, data: str) -> dict[str, bool | str | dict[str, str | int | float]]:
+        """
+        Busca el producto indicado mediante el nombre del producto dado.
 
-    def update_data_in_products(self):
-        pass
+        Parámetro:
+        - data (str): El nombre del producto a buscar.
+
+        Resultado:
+        - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
+            operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
+            corresponde con el parámetro indicado.
+        """
+        result: dict[str, bool | str | dict[str, str | int | float]] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        for product in self.products.values():
+            if product['name'] == data:
+                result['status'] = True
+                result['message'] = 'El producto ha sido encontrado con éxito.'
+                result['product'] = product
+                return result
+
+        result['message'] = 'Producto no encontrado: El nombre del producto no está registrado.'
+        return result
+
+    def update_data_in_products(self, data: dict[str, int]) -> dict[str, bool | str]:
+        """
+        Actualiza las existencias del producto indicado.
+
+        Parámetro:
+        - data (dict[str, int]): Ingresa un diccionario con las llaves de «code» y «quantity» correspondientes al código de
+            producto y la cantidad del stock a actualizar, respectivamente.
+
+        Resultado:
+        - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
+            operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
+            corresponde con el parámetro indicado.
+        """
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        data_code: int = data['code']
+        data_quantity: int = data['quantity']
+
+        if data_code not in self.products:
+            result['message'] = 'Existencias sin actualizar: El código de producto no está registrado.'
+            return result
+
+        self.products[data_code]['quantity'] = data_quantity + int(self.products[data_code]['quantity'])
+        result['status'] = True
+        result['message'] = 'Actualización del stock exitosa.'
+        return result
+    
+    def value_from_products(self) -> dict[str, bool | str | float]:
+        """
+        Realiza la consulta y el cálculo del valor monetario de las
+        existencias del inventario.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si el cálculo fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «stock» para el valor del inventario en formato float.
+        """
+        result: dict[str, bool | str | float] = {'status': False, 'message': 'Sin datos para visualizar.', 'stock': 0.00}
+
+        stock: float = 0
+        for product in self.products.values():
+            stock += int(product['quantity']) * float(product['price'])
+        else:
+            result['status'] = True
+            result['message'] = 'Se ha contabilizado el valor monetario del inventario con éxito.'
+            result['stock'] = stock
+            return result
+        
+    def view_all_in_products(self) -> dict[str, bool | str | list[dict[str, str | float | int]]]:
+        """
+        Realiza la consulta y extrae los datos de cada uno de los
+        productos y lo entrega empaquetado con formato de diccionarios.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «products» para la lista de diccionarios de los productos.
+        """
+        result: dict[str, bool | str | list[dict[str, str | float | int]]] = {'status': False, 'message': 'Sin datos para visualizar.'}
+
+        data_list: list[dict[str, str | float | int]] = []
+        for product in self.products.values():
+            data_list.append(product)
+        else:
+            if data_list:
+                result['status'] = True
+                result['message'] = 'Datos de productos extraídos.'
+                result['products'] = data_list
+            return result
+        
+    def view_stocks_in_products(self) -> dict[str, bool | str | list[dict[str, str | float | int]]]:
+        """
+        Realiza la consulta y extrae los datos de cada uno de los
+        productos y lo entrega empaquetado con formato de diccionarios.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «products» para la lista de diccionarios de los productos.
+        """
+        result: dict[str, bool | str | list[dict[str, str | float | int]]] = {'status': False, 'message': 'Sin datos para visualizar.'}
+
+        data_list: list[dict[str, str | float | int]] = []
+        for product in self.products.values():
+            if int(product['quantity']) <= 15:
+                data_list.append(product)
+        else:
+            if data_list:
+                result['status'] = True
+                result['message'] = 'Datos de productos con stock bajo extraídos.'
+                result['products'] = data_list
+            return result
+        
+    def view_all_in_transactions(self) -> dict[str, bool | str | list[dict[str, str | int]]]:
+        """
+        Realiza la consulta y extrae los datos de cada uno de los
+        productos y lo entrega empaquetado con formato de diccionarios.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «products» para la lista de diccionarios de los productos.
+        """
+        result: dict[str, bool | str | list[dict[str, str | int]]] = {'status': False, 'message': 'Sin datos para visualizar.'}
+
+        data_list: list[dict[str, str | int]] = []
+        for transactions in self.transactions.values():
+            data_list.append(transactions)
+        else:
+            if data_list:
+                result['status'] = True
+                result['message'] = 'Datos de transacciones extraídos.'
+                result['transactions'] = data_list
+            return result

@@ -1,8 +1,6 @@
 import streamlit as st
 import time
-from core.models import Product
 from pages.home import inventory
-
 import pandas as pd
 
 st.set_page_config(
@@ -21,7 +19,7 @@ with st.form('search_product'):
     code = st.number_input (
         label='CÓDIGO:',
         placeholder='Código del producto',
-        step=10**12,
+        step=1,
         min_value=10**12,
         max_value=10**13 - 1,
     )
@@ -41,30 +39,30 @@ with st.form('search_product'):
             st.stop()
         progress_text = 'Buscando producto mediante código...'
         my_bar = st.progress(0, text=progress_text)
-        product: Product | bool = inventory.search_by_code(int(code))
+        product: dict[str, bool | str | dict[str, str | int | float]] = inventory.search_by_code(int(code))
         for percent_complete in range(3):
             time.sleep(0.01)
             my_bar.progress(percent_complete * 50, text=progress_text)
             time.sleep(0.5)
         else:
             my_bar.empty()
-            if isinstance(product, bool):
-                st.error('El producto no existe', icon=None)
+            if product['status'] is False:
+                st.error(product['message'], icon=None)
                 st.session_state.product_found = None
             else:
-                st.session_state.product_found = product
+                st.session_state.product_found = product['product']
 
 if st.session_state.product_found is not None:
     product = st.session_state.product_found 
 
-    with st.form('del_product'): 
+    with st.form('del_product'):
         st.write('### Producto')
 
         product_df = pd.DataFrame(
             {
-                'PRODUCTO ENCONTRADO': [product.code, str(product.name), product.description, product.unity, product.quantity, product.price, product.total_value()],
+                'PRODUCTO ENCONTRADO': [product['code'], product['name'], product['description'], product['unity'], product['quantity'], product['price']],
             },
-            index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD', 'VALOR INVENTARIO'],
+            index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD'],
         )
         st.table(product_df)
     
@@ -79,12 +77,12 @@ if st.session_state.product_found is not None:
 
         if submitted_secondary:
             with st.spinner('Eliminando producto...', show_time=False):
-                product_was_del: bool | str = inventory.del_product(product.code)
+                product_was_del: dict = inventory.del_product(product['code'])
                 time.sleep(2)
-            if not isinstance(product_was_del, str):
-                st.success('El producto ha sido eliminado.')
+            if product_was_del['status'] is True:
+                st.success(product_was_del['message'])
                 st.session_state.product_found = None
                 time.sleep(3)
                 st.rerun(scope='app')
             else:
-                st.error(f'El producto no ha sido eliminado: {product_was_del}')
+                st.error(product_was_del['message'])

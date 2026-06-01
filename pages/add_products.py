@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import pandas as pd
 from core.models import Product
 from pages.home import inventory
 
@@ -13,11 +14,12 @@ st.sidebar.info('Añadir producto')
 
 with st.form('new_products'):
     col1, col2, col3 = st.columns(3)
+
     with col1:
         code = st.number_input (
             label='CÓDIGO:',
             placeholder='Código del producto',
-            step=10**12, # temporal steps
+            step=1,
             min_value=10**12,
             max_value=10**13 - 1,
         )
@@ -74,17 +76,20 @@ with st.form('new_products'):
             st.warning('Ingrese el precio del producto.')
             st.stop()
 
-        # if not quantity:
-        #     st.warning('Ingrese la cantidad del producto.')
-        #     st.stop()
-
         if not unity:
             st.warning('Ingrese la unidad de medida del producto.')
             st.stop()
 
         product = Product(code, name, description, price, quantity, unity)
+        product_dict = product.to_dict()
 
-        st.dataframe(product.to_dict())
+        product_df = pd.DataFrame(
+            {
+                'NUEVO PRODUCTO': [product_dict['code'], product_dict['name'], product_dict['description'], product_dict['unity'], product_dict['quantity'], product_dict['price']],
+            },
+            index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD'],
+        )
+        st.table(product_df)
 
         product_was_saved: dict[str, bool | str] = inventory.add_product(product)
 

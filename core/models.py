@@ -1,6 +1,7 @@
 import datetime
 
 class Product:
+    """Clase para modelar Producto."""
 
     def __init__(self, code: int, name: str, description: str, price: float, quantity: int, unity: str) -> None:
         self.code = code
@@ -31,6 +32,7 @@ class Product:
             }
 
 class Transaction:
+    """Clase para modelar una Transacción."""
     def __init__(self, transaction_type: str, product_code: int) -> None:
         self.type = transaction_type
         self.product_code = product_code

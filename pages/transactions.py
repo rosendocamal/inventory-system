@@ -17,20 +17,25 @@ with st.form('list_products'):
     )
     
     if submitted:
-        all_transactions: dict = inventory.transactions
+        info_transactions: dict[str, bool | str | list[dict[str, str | int]]] = inventory.list_transactions()
 
-        transaction_df: dict [str, list[int | str]] = {
-                'TRANSACCIÓN': [],
-                'TIPO': [],
-                'CÓDIGO DE PRODUCTO': [],
-                'FECHA DE TRANSACCIÓN': [],
-     
-            }
+        if info_transactions['status'] is False:
+            st.info(info_transactions['message'])
+        else:
+            all_transactions: list[dict[str, str | int]] = info_transactions['transactions']
+
+            transaction_df: dict [str, list[int | str]] = {
+                    'TRANSACCIÓN': [],
+                    'TIPO': [],
+                    'CÓDIGO DE PRODUCTO': [],
+                    'FECHA DE TRANSACCIÓN': [],
+
+                }
             
-        for key, transaction in all_transactions.items():
-            transaction_df['TRANSACCIÓN'].append(str(key))
-            transaction_df['TIPO'].append(transaction.type)
-            transaction_df['CÓDIGO DE PRODUCTO'].append(transaction.product_code)
-            transaction_df['FECHA DE TRANSACCIÓN'].append(transaction.to_dict()['transaction_date'])
+            for index, transaction in enumerate(all_transactions):
+                transaction_df['TRANSACCIÓN'].append(index + 1)
+                transaction_df['TIPO'].append(transaction['transaction'])
+                transaction_df['CÓDIGO DE PRODUCTO'].append(transaction['product_code'])
+                transaction_df['FECHA DE TRANSACCIÓN'].append(transaction['transaction_date'])
 
-        st.dataframe(data=transaction_df)
+            st.dataframe(data=transaction_df)

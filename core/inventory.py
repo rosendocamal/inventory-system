@@ -1,10 +1,25 @@
 from .models import Product, Transaction
+from .database import DatabaseManager
 
 class Inventory:
-    def __init__(self, storage) -> None:
+    """
+    Clase principal para la gestión de las funciones del sistema de inventario.
+    """
+    
+    def __init__(self, storage: DatabaseManager) -> None:
         self.database = storage
 
     def add_product(self, product: Product) -> dict[str, bool | str]:
+        """
+        Gestiona con los datos introducidos y la base de datos el agregado de productos al inventario.
+
+        Parámetros:
+        - product (class Product): recibe un objeto con todas los datos del producto por agregar.
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False) y
+            el mensaje describiendo de manera breve el evento.
+        """
         result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
 
         info_product: dict[str, str | int | float] = product.to_dict()
@@ -23,6 +38,16 @@ class Inventory:
         return result
 
     def del_product(self, code: int) -> dict[str, bool | str]:
+        """
+        Gestiona con el código introducido y la base de datos la eliminación del producto indicado del inventario.
+
+        Parámetros:
+        - code (int): recibe el código de producto
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False) y
+            el mensaje describiendo de manera breve el evento.
+        """
         result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
 
         info_del: dict[str, bool | str] = self.database.delete_from_products(code)
@@ -39,56 +64,153 @@ class Inventory:
 
         return result
 
-    def search_by_code(self, code: int) -> dict[str, bool | str | Product]:
-        result: dict[str, bool | str | Product] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+    def search_by_code(self, code: int) -> dict[str, bool | str | dict[str, str | int | float]]:
+        """
+        Realiza una búsqueda en la base de datos el código introducido del producto.
+
+        Parámetros:
+        - code (int): recibe el código de producto
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False) y
+            el mensaje describiendo de manera breve el evento. Si la operación fue exitosa (True) se
+            añade la key «product» con los datos del producto buscado, también en formato de diccionario.
+        """
+        result: dict[str, bool | str | dict[str, str | int | float]] = {'status': False, 'message': 'No se realizó ningún cambio.'}
 
         info_search: dict[str, bool | str | dict[str, str | int | float]] = self.database.search_code_in_products(code)
-        result['message'] = info_search['message']
+        result['message'] = str(info_search['message'])
 
-        info_transaction: dict[str, str | int] = Transaction('PRODUCT SEARCH', code).to_dict()
+        info_transaction: dict[str, str | int] = Transaction('PRODUCT CODE SEARCH', code).to_dict()
         self.database.save_to_transactions(info_transaction)
         
-        if result['status'] is False:
+        if info_search['status'] is False:
             return result
-
-        name, description, price, quantity, unity = info_search['product]']['name'], info_search['product]']['description'], info_search['product]']['price'], info_search['product]']['quantity'], info_search['product]']['unity']
-
-        product_found = Product(code, name, description, price, quantity, unity)
         
         result['status'] = True
-        result['product'] = product_found
+        result['product'] = info_search['product']
 
         return result
 
+    def search_by_name(self, name: str) -> dict[str, bool | str | dict[str, str | int | float]]:
+        """
+        Realiza una búsqueda en la base de datos el nombre introducido del producto.
 
-    def search_by_name(self, name: str) -> bool | Product:
-        for product in self.products.values():
-            if product.name == name:
-                return product
-        return False
-    
-    def update_stock(self, code: int, quantity: int = 0) -> bool:
-        if code not in self.products:
-            return False
-        self.products[code].update_quantity(quantity)
-        self.transactions[datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')] = Transaction('UPDATE STOCK', code)
-        return True
+        Parámetros:
+        - name (int): recibe el nombre del producto.
 
-    def total_inventory_value(self) -> float:
-        total_value: float = 0
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False) y
+            el mensaje describiendo de manera breve el evento. Si la operación fue exitosa (True) se
+            añade la key «product» con los datos del producto buscado, también en formato de diccionario.
+        """
+        result: dict[str, bool | str | dict[str, str | int | float]] = {'status': False, 'message': 'No se realizó ningún cambio.'}
 
-        for product in self.products.values():
-            total_value += product.total_value()
-        else:
-            return total_value
+        info_search: dict[str, bool | str | dict[str, str | int | float]] = self.database.search_name_in_products(name)
+        result['message'] = str(info_search['message'])
 
-    def list_products(self):
-        return self.products.values()
+        info_transaction: dict[str, str | int] = Transaction('PRODUCT NAME SEARCH', -1).to_dict()
+        self.database.save_to_transactions(info_transaction)
         
-    def low_stock_products(self) -> list[Product]:
-        low_stocks: list[Product] = []
-        for product in self.products.values():
-            if product.quantity <= 15:
-                low_stocks.append(product)
-        else:
-            return low_stocks
+        if info_search['status'] is False:
+            return result
+        
+        result['status'] = True
+        result['product'] = info_search['product']
+
+        return result
+    
+    def update_stock(self, code: int, quantity: int = 0) -> dict[str, bool | str]:
+        """
+        Actualiza la cantidad del inventario del producto señalado.
+
+        Parámetros:
+        - code (int): recibe el código de producto.
+        - quantity (int): recibe la cantidad por actualizar, por defecto es 0
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False) y
+            el mensaje describiendo de manera breve el evento.
+        """
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+
+        info_search: dict[str, bool | str] = self.database.update_data_in_products({'code': code, 'quantity': quantity})
+        result['message'] = str(info_search['message'])
+        
+        if info_search['status'] is False:
+            info_transaction: dict[str, str | int] = Transaction('FAILED PRODUCT STOCK UPDATE', code).to_dict()
+            self.database.save_to_transactions(info_transaction)
+            return result
+        
+        result['status'] = True
+        info_transaction: dict[str, str | int] = Transaction('PRODUCT STOCK UPDATE', code).to_dict()
+        self.database.save_to_transactions(info_transaction)
+        
+        return result
+
+    def total_inventory_value(self) -> dict[str, bool | str | float]:
+        """
+        Realiza una consulta a la base de datos para obtener el valor total, en términos monetarios, del inventario.
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False),
+            el mensaje describiendo de manera breve el evento y con el valor del stock.
+        """
+        info_value: dict[str, bool | str | float] = self.database.value_from_products()
+
+        info_transaction: dict[str, str | int] = Transaction('QUERY INVENTORY VALUE', -1).to_dict()
+        self.database.save_to_transactions(info_transaction)
+
+        return info_value
+
+    def list_products(self) -> dict[str, bool | str | list[dict[str, str | int | float]]]:
+        """
+        Realiza una consulta a la base de datos para obtener todos los productos en un formato de lista con
+        diccionarios.
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False),
+            el mensaje describiendo de manera breve el evento y con la lista de los diccionarios de
+            productos (siempre y cuando la operación hay sido existosa).
+        """
+        info_products: dict[str, bool | str | list[dict[str, str | int | float]]] = self.database.view_all_in_products()
+
+        info_transaction: dict[str, str | int] = Transaction('VIEW ALL PRODUCTS', -1).to_dict()
+        self.database.save_to_transactions(info_transaction)
+
+        return info_products
+        
+    def low_stock_products(self) -> dict[str, bool | str | list[dict[str, str | float | int]]]:
+        """
+        Realiza una consulta a la base de datos para obtener todos los productos en un formato de lista con
+        diccionarios. Se filtra aquellos que tienen menos o igual a 15 de existencias. Se entrega los valores
+        filtrados.
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False),
+            el mensaje describiendo de manera breve el evento y con la lista de los diccionarios de
+            productos con stock menor o igual a 15 (siempre y cuando la operación hay sido existosa).
+        """
+        info_low_stocks: dict[str, bool | str | list[dict[str, str | float | int]]] = self.database.view_stocks_in_products()
+
+        info_transaction: dict[str, str | int] = Transaction('VIEW STOCK LOW', -1).to_dict()
+        self.database.save_to_transactions(info_transaction)
+
+        return info_low_stocks
+    
+    def list_transactions(self) -> dict[str, bool | str | list[dict[str, str | int]]]:
+        """
+        Realiza una consulta a la base de datos para obtener todas las transacciones en un formato de lista con
+        diccionarios.
+
+        Resultado:
+        - result (dict): devuelve un diccionario indicando el éxito de la operación (True o False),
+            el mensaje describiendo de manera breve el evento y con la lista de los diccionarios de
+            transacciones (siempre y cuando la operación hay sido existosa).
+        """
+        info_transactions: dict[str, bool | str | list[dict[str, str | int]]] = self.database.view_all_in_transactions()
+
+        info_transaction: dict[str, str | int] = Transaction('VIEW ALL TRANSACTIONS', -1).to_dict()
+        self.database.save_to_transactions(info_transaction)
+
+        return info_transactions

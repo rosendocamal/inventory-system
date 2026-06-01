@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-from core.models import Product
 import pandas as pd
 from pages.home import inventory
 
@@ -22,7 +21,7 @@ with col1:
         code = st.number_input (
             label='CÓDIGO:',
             placeholder='Código del producto',
-            step=10**12,
+            step=1,
             min_value=10**12,
             max_value=10**13 - 1,
         )
@@ -42,21 +41,22 @@ with col1:
                 st.stop()
             progress_text = 'Buscando producto mediante código...'
             my_bar = st.progress(0, text=progress_text)
-            product: Product | bool = inventory.search_product(int(code))
+            product: dict[str, bool | str | dict[str, str | int | float]] = inventory.search_by_code(int(code))
             for percent_complete in range(3):
                 time.sleep(0.01)
                 my_bar.progress(percent_complete * 50, text=progress_text)
                 time.sleep(0.5)
             else:
                 my_bar.empty()
-                if isinstance(product, bool):
-                    st.error('El producto no existe', icon=None)
+                if product['status'] is False:
+                    st.error(product['message'], icon=None)
                 else:
+                    product_dict = product['product']
                     product_df = pd.DataFrame(
                         {
-                            'PRODUCTO ENCONTRADO': [product.code, str(product.name), product.description, product.unity, product.quantity, product.price, product.total_value()],
+                            'PRODUCTO ENCONTRADO': [product_dict['code'], product_dict['name'], product_dict['description'], product_dict['unity'], product_dict['quantity'], product_dict['price']],
                         },
-                        index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD', 'VALOR INVENTARIO'],
+                        index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD'],
                     )
                     st.dataframe(product_df)
 
@@ -79,20 +79,21 @@ with col2:
                 st.stop()
             progress_text = 'Buscando producto mediante nombre...'
             my_bar = st.progress(0, text=progress_text)
-            product: Product | bool = inventory.search_by_name(name)
+            product: dict[str, bool | str | dict[str, str | int | float]] = inventory.search_by_name(name)
             for percent_complete in range(3):
                 time.sleep(0.01)
                 my_bar.progress(percent_complete * 50, text=progress_text)
                 time.sleep(0.5)
             else:
                 my_bar.empty()
-                if isinstance(product, bool):
-                    st.error('El producto no existe', icon=None)
+                if product['status'] is False:
+                    st.error(product['message'], icon=None)
                 else:
+                    product_dict = product['product']
                     product_df = pd.DataFrame(
                         {
-                            'PRODUCTO ENCONTRADO': [product.code, str(product.name), product.description, product.unity, product.quantity, product.price, product.total_value()],
+                            'PRODUCTO ENCONTRADO': [product_dict['code'], product_dict['name'], product_dict['description'], product_dict['unity'], product_dict['quantity'], product_dict['price']],
                         },
-                        index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD', 'VALOR INVENTARIO'],
+                        index=['CÓDIGO', 'NOMBRE', 'DESCRIPCIÓN', 'UNIDAD DE MEDIDA', 'EXISTENCIAS', 'PRECIO POR UNIDAD'],
                     )
                     st.dataframe(product_df)
