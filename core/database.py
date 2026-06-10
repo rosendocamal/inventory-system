@@ -1,220 +1,302 @@
 import sqlite3
 
 class DatabaseManager:
-    def __init__(self, path: str) -> None:
-        self.path: str = path
-        self.connection: sqlite3.Connection = sqlite3.connect(self.path)
-        self.connection.row_factory = sqlite3.Row
-        self.create_tables()
-                
-    def create_tables(self):
-        statements: list[str] = [
-            '''PRAGMA foreign_keys = ON;''',
+
+    def __init__(self, db_name: str) -> None:
+        self.db_name: str = db_name
+        self._init_db()
+
+    def _get_connection(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_name)
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init_db(self) -> None:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS units (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    unity TEXT UNIQUE NOT NULL   
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS categories (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    category TEXT UNIQUE NOT NULL
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS products (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code INTEGER UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    price REAL NOT NULL,
+                    id_unity INTEGER NOT NULL,
+                    FOREIGN KEY (id_unity) REFERENCES units(id)
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    category INTEGER NOT NULL,
+                    affected_product_code INTEGER NOT NULL,
+                    transaction_date TEXT DEFAULT (datetime('now', 'localtime')),
+                    FOREIGN KEY (affected_product_code) REFERENCES products(id) ON DELETE CASCADE,
+                    FOREIGN KEY (category) REFERENCES categories(id)
+                );
+            """)
+            conn.commit()
+
+    def _get_or_create_unit(self, cursor: sqlite3.Cursor, unity_name: str) -> int:
+        cursor.execute("INSERT OR IGNORE INTO units (unity) VALUES (?);", (unity_name,))
+        if cursor.lastrowid:
+            return cursor.lastrowid
+        cursor.execute("SELECT id FROM units WHERE unity = ?;", (unity_name,))
+        return int(cursor.fetchone()["id"])
+
+    def _get_or_create_category(self, cursor: sqlite3.Cursor, category_name: str) -> int:
+        cursor.execute("INSERT OR IGNORE INTO categories (category) VALUES (?);", (category_name,))
+        if cursor.lastrowid:
+            return cursor.lastrowid
+        cursor.execute("SELECT id FROM categories WHERE category = ?;", (category_name,))
+        return int(cursor.fetchone()["id"])
+
+    def save_to_transactions(self, data: dict) -> None:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            category_id = self._get_or_create_category(cursor, data["type"])
             
-            '''CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code INTEGER UNIQUE NOT NULL,
-                name TEXT NOT NULL,
-                description TEXT NOT NULL,
-                quantity INTEGER NOT NULL,
-                price REAL NOT NULL,
-                id_unity INTEGER NOT NULL,
+            cursor.execute("SELECT id FROM products WHERE code = ?;", (data["product_code"],))
+            product_row = cursor.fetchone()
+            if not product_row:
+                return
+            product_id = product_row["id"]
+            
+            transaction_date = data.get("transaction_date")
+            if transaction_date:
+                cursor.execute("""
+                    INSERT INTO transactions (category, affected_product_code, transaction_date) 
+                    VALUES (?, ?, ?);
+                """, (category_id, product_id, transaction_date))
+            else:
+                cursor.execute("""
+                    INSERT INTO transactions (category, affected_product_code) 
+                    VALUES (?, ?);
+                """, (category_id, product_id))
+            conn.commit()
 
-                FOREIGN KEY (id_unity) REFERENCES units(unity) ON DELETE CASCADE
-            );''',
+    def save_to_products(self, data: dict) -> dict[str, bool | str]:
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        required_keys = ['code', 'name', 'description', 'quantity', 'price', 'unity']
+        
+        if not all(k in data for k in required_keys):
+            result['message'] = 'Producto rechazado: Información del producto incompleta.'
+            return result
 
-            '''CREATE TABLE IF NOT EXISTS units (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                unity TEXT UNIQUE KEY NOT NULL,    
-            );'''
-
-            '''CREATE TABLE IF NOT EXISTS transactions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                transaction_type TEXT NOT NULL,
-                affected_product_code INTEGER NOT NULL,
-                transaction_date TEXT NOT NULL,
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            unit_id = self._get_or_create_unit(cursor, data['unity'])
+            try:
+                cursor.execute("""
+                    INSERT INTO products (code, name, description, quantity, price, id_unity) 
+                    VALUES (?, ?, ?, ?, ?, ?);
+                """, (data['code'], data['name'], data['description'], data['quantity'], data['price'], unit_id))
+                conn.commit()
+            except sqlite3.IntegrityError:
+                result['message'] = 'Producto rechazado: El código de producto está registrado.'
+                return result
                 
-                FOREING KEY (transaction_type) REFERENCES types_transaction(id) ON DELETE CASCADE,
-                FOREING KEY (affected_id_product) REFERENCES products(id) ON DELETE CASCADE
-            );''',
+        result.update({'status': True, 'message': 'Producto agregado con éxito.'})
+        return result
 
-            '''INSERT INTO units (unity) VALUES ('PZ');
-            INSERT INTO units (unity) VALUES ('CJ');
-            INSERT INTO units (unity) VALUES ('GR');
-            INSERT INTO units (unity) VALUES ('KG');
-            INSERT INTO units (unity) VALUES ('ML');
-            INSERT INTO units (unity) VALUES ('LT');
-            INSERT INTO units (unity) VALUES ('M');'''
+    def delete_from_products(self, data: int) -> dict[str, bool | str]:
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT quantity FROM products WHERE code = ?;", (data,))
+            row = cursor.fetchone()
+            
+            if not row:
+                result['message'] = 'Producto no eliminado: El código de producto no está registrado.'
+                return result
+                
+            product_quantity = int(row["quantity"])
+            if product_quantity != 0:
+                result['message'] = 'Producto no eliminado: '
+                result['message'] += 'Posee inventario negativo.' if product_quantity < 0 else 'Posee inventario positivo.'
+                return result
+            
+            cursor.execute("DELETE FROM products WHERE code = ?;", (data,))
+            conn.commit()
+            
+        result.update({'status': True, 'message': 'Producto eliminado con éxito.'})
+        return result
+
+    def _map_product_rows(self, rows: list[sqlite3.Row]) -> list[dict]:
+        return [
+            {
+                'code': row['code'],
+                'name': row['name'],
+                'description': row['description'],
+                'quantity': row['quantity'],
+                'price': row['price'],
+                'unity': row['unity']
+            } for row in rows
         ]
 
-        try:
-            with self.connection as connection:
-                cursor: sqlite3.Cursor = connection.cursor()
-                for statement in statements:
-                    cursor.execute(statement)
-                connection.commit()
-
-                #prox feature: add logs
-                print('Las tablas han sido creadas con éxito.')
-        except sqlite3.OperationalError:
-            # prox feature: add logs
-                print('Las tablas no han sido creadas.')
+    def search_code_in_products(self, data: int) -> dict[str, bool | str | dict]:
+        result: dict[str, bool | str | dict] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT code, name, description, quantity, price, units.unity
+                FROM products
+                INNER JOIN units ON units.id = products.id_unity
+                WHERE code = ?;
+            """, (data,))
+            row = cursor.fetchone()
             
-    def insert_data_in_products(self, data: dict) -> dict[str, bool]:
-        statements: dict[str, str] = {
-            'search_by_code': '''SELECT code FROM products WHERE code = ?;''',
+            if not row:
+                result['message'] = 'Producto no encontrado: El código de producto no está registrado.'
+                return result
+                
+            result['product'] = self._map_product_rows([row])[0]
+            result.update({'status': True, 'message': 'El producto ha sido encontrado con éxito.'})
+            return result
 
-            'search_by_id_unity': '''SELECT id FROM units WHERE unity = ?;''',
-
-            'insert_info_product': '''INSERT INTO products (code, name, description, quantity, price, id_unity) VALUES (?, ?, ?, ?, ?, ?);'''
-        }
-
-        try:
-            with self.connection as connection:
-                cursor: sqlite3.Cursor = connection.cursor()
-
-                code, name, description, quantity, price, unity = data['code'], data['name'], data['description'], data['quantity'], data['price'], data['unity']
-
-                cursor.execute(statements['search_by_code'], code)
-                id_code = cursor.fetchall()[0]
-
-                if id_code == code:
-                    return {'status': False, 'if_code_exists': True, 'if_data_complete': False}
-
-                cursor.execute(statements['search_by_id_unity'], unity)
-                id_unity = cursor.fetchall()[0]
-                cursor.execute(statements['insert_info_product'], (code, name, description, quantity, price, id_unity))
-
-                connection.commit()
-
-                #prox feature: add logs
-                print('Los datos han sido insertados correctamente a «products».')
-                return {'status': True, 'if_code_exists': False, 'if_data_complete': True}
-        except (sqlite3.OperationalError, KeyError):
-            # prox feature: add logs
-                print('Los datos no han sido insertados a «products».')
-                return {'status': True, 'if_code_exists': False, 'if_data_complete': False}
-
-    def insert_data_in_transactions(self, data: dict):
-        statements: dict[str, str] = {
-            'search_by_id_type': '''SELECT id FROM units WHERE unity = ?;''',
-
-            'search_by_id_code': '''SELECT id FROM products WHERE code = ?;''',
-
-            'insert_info_transaction': '''INSERT INTO transactions (transaction_type, affected_product_code, transaction_date) VALUES (?, ?, ?);'''
-        }
-
-        try:
-            with self.connection as connection:
-                cursor: sqlite3.Cursor = connection.cursor()
-
-                transaction_type, product_code, transaction_date = data['transaction_type'], data['product_code'], data['transaction_date']
-                cursor.execute(statements['search_by_id_type'], transaction_type)
-                id_transaction_type = cursor.fetchall()[0]
-                cursor.execute(statements['search_by_id_code'], product_code)
-                id_product_code = cursor.fetchall()[0]
-                cursor.execute(statements['insert_info_transaction'], (id_transaction_type, id_product_code, transaction_date))
-
-                connection.commit()
-
-                #prox feature: add logs
-                print('Los datos han sido insertados correctamente a «transactions».')
-        except (sqlite3.OperationalError, KeyError):
-            # prox feature: add logs
-            print('Los datos no han sido insertados a «transactions».')
-
-def delete_data_in_products(self, data: dict):
-    statements: dict[str, str] = {
-            'search_by_code': '''SELECT code FROM products WHERE code = ?;''',
-
-            'is_zero_inventory': '''SELECT quantity FROM products WHERE code = ?''',
-
-            'del_info_statement': '''DELETE FROM products WHERE code = ?;'''
-    }
-
-    try:
-        with self.connection as connection:
-            cursor: sqlite3.Cursor = connection.cursor()
-
-            product_code = data['product_code']
-            cursor.execute(statements['search_by_code'], product_code)
-            is_product_code = cursor.fetchall()[0]
-            if is_product_code is False:
-                return
-            cursor.execute(statements['is_zero_inventory'], product_code)
-            is_zero_quantity = cursor.fetchall()[0]
-            if is_zero_quantity != 0:
-                return
-            cursor.execute(statements['del_info_statement'], product_code)
-
-            connection.commit()
-
-            # prox feature: add logs
-            print('Los datos han sido eliminados con éxito.')
-    except (sqlite3.OperationalError, KeyError):
-        # prox feature: add logs
-        print('Los datos no han sido eliminados.')
-
-def update_data_in_products(self, data: dict):
-    statements: dict[str, str] = {
-            'search_by_code': '''SELECT code FROM products WHERE code = ?;''',
-
-            'update_quantity': '''UPDATE products SET quantity = ? WHERE code = ?;'''
-        }
-
-    try:
-        with self.connection as connection:
-            cursor: sqlite3.Cursor = connection.cursor()
-
-            product_code, product_quantity = data['product_code'], data['product_quantity']
-            cursor.execute(statements['search_by_code'], product_code)
-            is_product_code = cursor.fetchall()[0]
-            if is_product_code is False:
-                return
-            cursor.execute(statements['update_quantity'], (product_quantity, product_code,))
-
-            connection.commit()
-
-            #prox feature: add logs
-            print('Los datos han sido insertados correctamente a «transactions».')
-    except (sqlite3.OperationalError, KeyError):
-        # prox feature: add logs
-        print('Los datos no han sido insertados a «transactions».')
-
-def query_data_in_products(self, data: dict):
-    statements: dict[str, str] = {
-            'search_by_code': '''SELECT code FROM products WHERE code = ?;''',
-
-            'search_by_name': '''SELECT name FROM products WHERE name = ?;'''
-        }
-
-    try:
-        with self.connection as connection:
-            cursor: sqlite3.Cursor = connection.cursor()
-
-            product_code, product_name, query_option = data['product_code'], data['product_name'], data.get('search')
-
-            match query_option:
-                case 'code':
-                    cursor.execute(statements['search_by_code'], product_code)
-                    is_product_code = cursor.fetchall()[0]
-                    if is_product_code is False:
-                        return
-                    return is_product_code
-                case 'name':
-                    cursor.execute(statements['search_by_name'], product_name)
-                    is_product_name = cursor.fetchall()[0]
-                    if is_product_name is False:
-                        return
-                    return is_product_name
-                case _:
-                    pass
+    def search_name_in_products(self, data: str) -> dict[str, bool | str | dict]:
+        result: dict[str, bool | str | dict] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT code, name, description, quantity, price, units.unity
+                FROM products
+                INNER JOIN units ON units.id = products.id_unity
+                WHERE name = ?;
+            """, (data,))
+            row = cursor.fetchone()
             
+            if not row:
+                result['message'] = 'Producto no encontrado: El nombre del producto no está registrado.'
+                return result
+                
+            result['product'] = self._map_product_rows([row])[0]
+            result.update({'status': True, 'message': 'El producto ha sido encontrado con éxito.'})
+            return result
 
-            connection.commit()
+    def update_data_in_products(self, data: dict[str, int]) -> dict[str, bool | str]:
+        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE products
+                SET quantity = quantity + ?
+                WHERE code = ?;
+            """, (data['quantity'], data['code']))
+            conn.commit()
+            
+            if cursor.rowcount == 0:
+                result['message'] = 'Existencias sin actualizar: El código de producto no está registrado.'
+                return result
+                
+        result.update({'status': True, 'message': 'Actualización del stock exitosa.'})
+        return result
 
-            #prox feature: add logs
-            print()
-    except (sqlite3.OperationalError, KeyError):
-        # prox feature: add logs
-        print()
+    def value_from_products(self) -> dict[str, bool | str | float]:
+        result: dict[str, bool | str | float] = {'status': False, 'message': 'Sin datos para visualizar.', 'stock': 0.00}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT SUM(quantity * price) AS total_value FROM products;")
+            row = cursor.fetchone()
+            
+            if row and row["total_value"] is not None:
+                result.update({
+                    'status': True,
+                    'message': 'Se ha contabilizado el valor monetario del inventario con éxito.',
+                    'stock': float(row["total_value"])
+                })
+        return result
+
+    def view_all_in_products(self) -> dict[str, bool | str | list[dict]]:
+        result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT code, name, description, quantity, price, units.unity
+                FROM products
+                INNER JOIN units ON units.id = products.id_unity;
+            """)
+            rows = cursor.fetchall()
+            
+            if not rows:
+                return result
+                
+            result.update({
+                'status': True,
+                'message': 'Datos de productos extraídos.',
+                'products': self._map_product_rows(rows)
+            })
+            return result
+
+    def view_stocks_in_products(self) -> dict[str, bool | str | list[dict]]:
+        result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT code, name, description, quantity, price, units.unity
+                FROM products
+                INNER JOIN units ON units.id = products.id_unity
+                WHERE quantity <= 15;
+            """)
+            rows = cursor.fetchall()
+            
+            if not rows:
+                return result
+                
+            result.update({
+                'status': True,
+                'message': 'Datos de productos con stock bajo extraídos.',
+                'products': self._map_product_rows(rows)
+            })
+            return result
+
+    def view_all_in_transactions(self) -> dict[str, bool | str | list[dict]]:
+        result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT t.id, c.category, p.code AS product_code, t.transaction_date 
+                FROM transactions t
+                INNER JOIN categories c ON c.id = t.category
+                INNER JOIN products p ON p.id = t.affected_product_code;
+            """)
+            rows = cursor.fetchall()
+            
+            if not rows:
+                return result
+                
+            result.update({
+                'status': True,
+                'message': 'Datos de transacciones extraídos.',
+                'transactions': [
+                    {
+                        'id': row['id'],
+                        'category': row['category'],
+                        'affected_product_code': row['product_code'],
+                        'transaction_date': row['transaction_date']
+                    } for row in rows
+                ]
+            })
+            return result
