@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class DatabaseManager:
     """
     Clase principal para la gestión de la base de datos.
@@ -61,11 +62,17 @@ class DatabaseManager:
         cursor.execute("SELECT id FROM units WHERE unity = ?;", (unity_name,))
         return int(cursor.fetchone()["id"])
 
-    def _get_or_create_category(self, cursor: sqlite3.Cursor, category_name: str) -> int:
-        cursor.execute("INSERT OR IGNORE INTO categories (category) VALUES (?);", (category_name,))
+    def _get_or_create_category(
+        self, cursor: sqlite3.Cursor, category_name: str
+    ) -> int:
+        cursor.execute(
+            "INSERT OR IGNORE INTO categories (category) VALUES (?);", (category_name,)
+        )
         if cursor.lastrowid:
             return cursor.lastrowid
-        cursor.execute("SELECT id FROM categories WHERE category = ?;", (category_name,))
+        cursor.execute(
+            "SELECT id FROM categories WHERE category = ?;", (category_name,)
+        )
         return int(cursor.fetchone()["id"])
 
     def save_to_transactions(self, data: dict) -> None:
@@ -79,24 +86,32 @@ class DatabaseManager:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             category_id = self._get_or_create_category(cursor, data["transaction"])
-            
-            cursor.execute("SELECT id FROM products WHERE code = ?;", (data["product_code"],))
+
+            cursor.execute(
+                "SELECT id FROM products WHERE code = ?;", (data["product_code"],)
+            )
             product_row = cursor.fetchone()
             if not product_row:
                 return
             product_id = product_row["id"]
-            
+
             transaction_date = data.get("transaction_date")
             if transaction_date:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO transactions (category, affected_product_code, transaction_date) 
                     VALUES (?, ?, ?);
-                """, (category_id, product_id, transaction_date))
+                """,
+                    (category_id, product_id, transaction_date),
+                )
             else:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO transactions (category, affected_product_code) 
                     VALUES (?, ?);
-                """, (category_id, product_id))
+                """,
+                    (category_id, product_id),
+                )
             conn.commit()
 
     def save_to_products(self, data: dict) -> dict[str, bool | str]:
@@ -111,74 +126,101 @@ class DatabaseManager:
         - result (dict[str, bool | str]): retorna un diccionario sobre el estado (bool) y el mensaje
             de resultado o error (str)
         """
-        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
-        required_keys = ['code', 'name', 'description', 'quantity', 'price', 'unity']
-        
+        result: dict[str, bool | str] = {
+            "status": False,
+            "message": "No se realizó ningún cambio.",
+        }
+        required_keys = ["code", "name", "description", "quantity", "price", "unity"]
+
         if not all(k in data for k in required_keys):
-            result['message'] = 'Producto rechazado: Información del producto incompleta.'
+            result["message"] = (
+                "Producto rechazado: Información del producto incompleta."
+            )
             return result
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            unit_id = self._get_or_create_unit(cursor, data['unity'])
+            unit_id = self._get_or_create_unit(cursor, data["unity"])
             try:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO products (code, name, description, quantity, price, id_unity) 
                     VALUES (?, ?, ?, ?, ?, ?);
-                """, (data['code'], data['name'], data['description'], data['quantity'], data['price'], unit_id))
+                """,
+                    (
+                        data["code"],
+                        data["name"],
+                        data["description"],
+                        data["quantity"],
+                        data["price"],
+                        unit_id,
+                    ),
+                )
                 conn.commit()
             except sqlite3.IntegrityError:
-                result['message'] = 'Producto rechazado: El código de producto está registrado.'
+                result["message"] = (
+                    "Producto rechazado: El código de producto está registrado."
+                )
                 return result
-                
-        result.update({'status': True, 'message': 'Producto agregado con éxito.'})
+
+        result.update({"status": True, "message": "Producto agregado con éxito."})
         return result
 
     def delete_from_products(self, data: int) -> dict[str, bool | str]:
         """
         Elimina el producto del inventario indicado mediante el código de producto.
-        
+
         Parámetro:
         - data (int): El código de producto a eliminar.
 
         Resultado:
         - result (dict[str, bool | str]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
             de resultado o error ('message': str). El estado es True si la operación fue exitosa y False si fue
-            lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. 
+            lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario.
         """
-        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
-        
+        result: dict[str, bool | str] = {
+            "status": False,
+            "message": "No se realizó ningún cambio.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT quantity FROM products WHERE code = ?;", (data,))
             row = cursor.fetchone()
-            
+
             if not row:
-                result['message'] = 'Producto no eliminado: El código de producto no está registrado.'
+                result["message"] = (
+                    "Producto no eliminado: El código de producto no está registrado."
+                )
                 return result
-                
+
             product_quantity = int(row["quantity"])
             if product_quantity != 0:
-                result['message'] = 'Producto no eliminado: '
-                result['message'] += 'Posee inventario negativo.' if product_quantity < 0 else 'Posee inventario positivo.'
+                result["message"] = "Producto no eliminado: "
+                result["message"] += (
+                    "Posee inventario negativo."
+                    if product_quantity < 0
+                    else "Posee inventario positivo."
+                )
                 return result
-            
+
             cursor.execute("DELETE FROM products WHERE code = ?;", (data,))
             conn.commit()
-            
-        result.update({'status': True, 'message': 'Producto eliminado con éxito.'})
+
+        result.update({"status": True, "message": "Producto eliminado con éxito."})
         return result
 
     def _map_product_rows(self, rows: list[sqlite3.Row]) -> list[dict]:
         return [
             {
-                'code': row['code'],
-                'name': row['name'],
-                'description': row['description'],
-                'quantity': row['quantity'],
-                'price': row['price'],
-                'unity': row['unity']
-            } for row in rows
+                "code": row["code"],
+                "name": row["name"],
+                "description": row["description"],
+                "quantity": row["quantity"],
+                "price": row["price"],
+                "unity": row["unity"],
+            }
+            for row in rows
         ]
 
     def search_code_in_products(self, data: int) -> dict[str, bool | str | dict]:
@@ -195,24 +237,34 @@ class DatabaseManager:
             operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
             corresponde con el parámetro indicado.
         """
-        result: dict[str, bool | str | dict] = {'status': False, 'message': 'No se realizó ningún cambio.'}
-        
+        result: dict[str, bool | str | dict] = {
+            "status": False,
+            "message": "No se realizó ningún cambio.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT code, name, description, quantity, price, units.unity
                 FROM products
                 INNER JOIN units ON units.id = products.id_unity
                 WHERE code = ?;
-            """, (data,))
+            """,
+                (data,),
+            )
             row = cursor.fetchone()
-            
+
             if not row:
-                result['message'] = 'Producto no encontrado: El código de producto no está registrado.'
+                result["message"] = (
+                    "Producto no encontrado: El código de producto no está registrado."
+                )
                 return result
-                
-            result['product'] = self._map_product_rows([row])[0]
-            result.update({'status': True, 'message': 'El producto ha sido encontrado con éxito.'})
+
+            result["product"] = self._map_product_rows([row])[0]
+            result.update(
+                {"status": True, "message": "El producto ha sido encontrado con éxito."}
+            )
             return result
 
     def search_name_in_products(self, data: str) -> dict[str, bool | str | dict]:
@@ -224,29 +276,39 @@ class DatabaseManager:
 
         Resultado:
         - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
-            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si 
+            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si
             fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
             operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
             corresponde con el parámetro indicado.
         """
-        result: dict[str, bool | str | dict] = {'status': False, 'message': 'No se realizó ningún cambio.'}
-        
+        result: dict[str, bool | str | dict] = {
+            "status": False,
+            "message": "No se realizó ningún cambio.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT code, name, description, quantity, price, units.unity
                 FROM products
                 INNER JOIN units ON units.id = products.id_unity
                 WHERE name = ?;
-            """, (data,))
+            """,
+                (data,),
+            )
             row = cursor.fetchone()
-            
+
             if not row:
-                result['message'] = 'Producto no encontrado: El nombre del producto no está registrado.'
+                result["message"] = (
+                    "Producto no encontrado: El nombre del producto no está registrado."
+                )
                 return result
-                
-            result['product'] = self._map_product_rows([row])[0]
-            result.update({'status': True, 'message': 'El producto ha sido encontrado con éxito.'})
+
+            result["product"] = self._map_product_rows([row])[0]
+            result.update(
+                {"status": True, "message": "El producto ha sido encontrado con éxito."}
+            )
             return result
 
     def update_data_in_products(self, data: dict[str, int]) -> dict[str, bool | str]:
@@ -259,27 +321,35 @@ class DatabaseManager:
 
         Resultado:
         - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
-            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si 
+            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si
             fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
             operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
             corresponde con el parámetro indicado.
         """
-        result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
-        
+        result: dict[str, bool | str] = {
+            "status": False,
+            "message": "No se realizó ningún cambio.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE products
                 SET quantity = quantity + ?
                 WHERE code = ?;
-            """, (data['quantity'], data['code']))
+            """,
+                (data["quantity"], data["code"]),
+            )
             conn.commit()
-            
+
             if cursor.rowcount == 0:
-                result['message'] = 'Existencias sin actualizar: El código de producto no está registrado.'
+                result["message"] = (
+                    "Existencias sin actualizar: El código de producto no está registrado."
+                )
                 return result
-                
-        result.update({'status': True, 'message': 'Actualización del stock exitosa.'})
+
+        result.update({"status": True, "message": "Actualización del stock exitosa."})
         return result
 
     def value_from_products(self) -> dict[str, bool | str | float]:
@@ -289,23 +359,29 @@ class DatabaseManager:
 
         Resultado:
         - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
-            de resultado o error ('message': str). El estado es True si el cálculo fue exitosa y False si 
+            de resultado o error ('message': str). El estado es True si el cálculo fue exitosa y False si
             fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
             key «stock» para el valor del inventario en formato float.
         """
-        result: dict[str, bool | str | float] = {'status': False, 'message': 'Sin datos para visualizar.', 'stock': 0.00}
-        
+        result: dict[str, bool | str | float] = {
+            "status": False,
+            "message": "Sin datos para visualizar.",
+            "stock": 0.00,
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT SUM(quantity * price) AS total_value FROM products;")
             row = cursor.fetchone()
-            
+
             if row and row["total_value"] is not None:
-                result.update({
-                    'status': True,
-                    'message': 'Se ha contabilizado el valor monetario del inventario con éxito.',
-                    'stock': float(row["total_value"])
-                })
+                result.update(
+                    {
+                        "status": True,
+                        "message": "Se ha contabilizado el valor monetario del inventario con éxito.",
+                        "stock": float(row["total_value"]),
+                    }
+                )
         return result
 
     def view_all_in_products(self) -> dict[str, bool | str | list[dict]]:
@@ -315,12 +391,15 @@ class DatabaseManager:
 
         Resultado:
         - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
-            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si
             fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
             key «products» para la lista de diccionarios de los productos.
         """
-        result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
-        
+        result: dict[str, bool | str | list[dict]] = {
+            "status": False,
+            "message": "Sin datos para visualizar.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -329,15 +408,17 @@ class DatabaseManager:
                 INNER JOIN units ON units.id = products.id_unity;
             """)
             rows = cursor.fetchall()
-            
+
             if not rows:
                 return result
-                
-            result.update({
-                'status': True,
-                'message': 'Datos de productos extraídos.',
-                'products': self._map_product_rows(rows)
-            })
+
+            result.update(
+                {
+                    "status": True,
+                    "message": "Datos de productos extraídos.",
+                    "products": self._map_product_rows(rows),
+                }
+            )
             return result
 
     def view_stocks_in_products(self) -> dict[str, bool | str | list[dict]]:
@@ -347,12 +428,15 @@ class DatabaseManager:
 
         Resultado:
         - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
-            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si
             fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
             key «products» para la lista de diccionarios de los productos.
         """
-        result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
-        
+        result: dict[str, bool | str | list[dict]] = {
+            "status": False,
+            "message": "Sin datos para visualizar.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -362,15 +446,17 @@ class DatabaseManager:
                 WHERE quantity <= 15;
             """)
             rows = cursor.fetchall()
-            
+
             if not rows:
                 return result
-                
-            result.update({
-                'status': True,
-                'message': 'Datos de productos con stock bajo extraídos.',
-                'products': self._map_product_rows(rows)
-            })
+
+            result.update(
+                {
+                    "status": True,
+                    "message": "Datos de productos con stock bajo extraídos.",
+                    "products": self._map_product_rows(rows),
+                }
+            )
             return result
 
     def view_all_in_transactions(self) -> dict[str, bool | str | list[dict]]:
@@ -380,12 +466,15 @@ class DatabaseManager:
 
         Resultado:
         - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
-            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si
             fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
             key «products» para la lista de diccionarios de los productos.
         """
-        result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
-        
+        result: dict[str, bool | str | list[dict]] = {
+            "status": False,
+            "message": "Sin datos para visualizar.",
+        }
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -395,20 +484,23 @@ class DatabaseManager:
                 INNER JOIN products p ON p.id = t.affected_product_code;
             """)
             rows = cursor.fetchall()
-            
+
             if not rows:
                 return result
-                
-            result.update({
-                'status': True,
-                'message': 'Datos de transacciones extraídos.',
-                'transactions': [
-                    {
-                        'id': row['id'],
-                        'category': row['category'],
-                        'affected_product_code': row['product_code'],
-                        'transaction_date': row['transaction_date']
-                    } for row in rows
-                ]
-            })
+
+            result.update(
+                {
+                    "status": True,
+                    "message": "Datos de transacciones extraídos.",
+                    "transactions": [
+                        {
+                            "id": row["id"],
+                            "category": row["category"],
+                            "affected_product_code": row["product_code"],
+                            "transaction_date": row["transaction_date"],
+                        }
+                        for row in rows
+                    ],
+                }
+            )
             return result
