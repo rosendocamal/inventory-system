@@ -18,9 +18,6 @@ Nuestra ayuda le facilitará realizar la transición de procesos manuales, como 
 
 ![Sidebar](img/añadir_producto.png)
 
-[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
-[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
-
 ## Capacidades del sistema
 
 Nuestra solución posee las principales y adecuadas funciones iniciales, sin complejidad ni funciones que complican el uso:
@@ -100,7 +97,7 @@ pip install sqlite3
 streamlit run main.py
 ```
 
-En unos segundos se abrirá el navegador, por defecto la de su sistema (**Chrome**, **Firefox**, etc.), y el gestor de inventario estaría en funcionamiento. Si tienes abierto el navegador, tiene que abrir que buscar entre las aplicaciones abiertas o en segundo plano su navegador y una vez ahí, selecciona la pestaña de `Sistema de Inventario`.
+En unos segundos se abrirá el navegador, por defecto la de su sistema (**Chrome**, **Firefox**, etc.), y el gestor de inventario estaría en funcionamiento. Si tienes abierto el navegador, tiene que buscar entre las aplicaciones abiertas o en segundo plano su navegador y una vez ahí, selecciona la pestaña de `Sistema de Inventario`.
 
 ## Guía de uso
 
@@ -109,20 +106,35 @@ Ubícate dentro `inventory-system/` y ejecuta:
 streamlit run main.py
 ```
 
-En unos segundos se abrirá el navegador, por defecto la de su sistema (**Chrome**, **Firefox**, etc.), y el gestor de inventario estaría en funcionamiento. Si tienes abierto el navegador, tiene que abrir que buscar entre las aplicaciones abiertas o en segundo plano su navegador y una vez ahí, selecciona la pestaña de `Sistema de Inventario`.
+En unos segundos se abrirá el navegador, por defecto la de su sistema (**Chrome**, **Firefox**, etc.), y el gestor de inventario estaría en funcionamiento. Si tienes abierto el navegador, tiene que buscar entre las aplicaciones abiertas o en segundo plano su navegador y una vez ahí, selecciona la pestaña de `Sistema de Inventario`.
 
-![](img/anadir_producto.png)
-![](img/anadir_producto_1.png)
-![](img/buscar_producto.png)
-![](img/eliminar_producto.png)
-![](img/listar_productos.png)
-![](img/transacciones.png)
+![Añadir producto](img/anadir_producto.png)
+![Añadir producto](img/anadir_producto_1.png)
+![Añadir producto](img/buscar_producto.png)
+![Eliminar producto](img/eliminar_producto.png)
+![Actualizar producto](img/actualizar_producto.png)
+![Catálogo de productos](img/listar_productos.png)
+![Historial de transacciones](img/transacciones.png)
+
+## Roadmap
+
+> [!IMPORTANT]
+> Si lo consideramos oportuno, las siguientes implementaciones se harán realidad.
+
+[] Importación y exportación de datos con formato **CSV** o similares.
+[] Empaquetar nuestra solución para su portabilidad y fácil instalación.
+[] Gestión de usuarios y mejora en los permisos y la seguridad de la información.
 
 ## Anédocta
 
+Teníamos días sin tocar el proyecto por falta de voluntad, o por agenda ocupada. La única actualización o avance que necesitaba para culminar esta hazaña era un aspecto mínimo. Era migrar la capa de persistencia temporal de diccionarios en Python a una base de datos local. Preparado estaban las sentencias **SQL**, con guías y pasos, teníamos breve experiencia en **SQLite** y, habíamos experimentado y testado con el «framework», el código de la clase del gestor de base de datos estaba casi lista. Con cambiar la sintaxis y unas escasas modificaciones, pasar de diccionarios a una perduración de datos era trivial. O al menos, eso suponíamos aunque la evidencia de la falta de acción refutaba nuestra perspectiva. Planteamos manejar esta situación de manera poco ortodoxa, pero ajustado a las tendencias tecnológicas.
+
+Utilizamos a **Gemini Flash**, en chatbot (lamentablemente), para esta encomienda. Le adjuntamos archivos de dos ramas distintas: el código de la clase del gestor de la base de datos (diccionarios, memoria temporal), de la clase de la lógica de negocio (inventario) y las sentencias SQL. En un «prompt», estructurado de manera básica, le indicamos leer la interconexión entre capas, interpretar lo que hace la gestión de diccionarios y las sentencias SQL, permitir la compatibilidad entre capas, utilizar las mejores prácticas modernas, sin incluir comentarios en el código ni intentos de interacción (conversación). El código presentado quedó con un 90% de acierto, falló en no utilizar módulos adicionales para el **type hints** porque los empleó cuando se pidió lo contrario, algo fácil de resolver.
+
+El código generado por **IA** fue sometido a escrutinio, **code review**, y paso. ¿Qué aprendimos en ese código? No mucho, pero si breves detalles de cómo implementar algo o pormenores idiomáticos, difícil de aprender en tutoriales, fácil de aprender leyendo código ajeno. La realidad, la **IA** nos asistió solo esa parte. Dado la arquitectura por capas y la comunicación entre ellas por medio de diccionarios con un formato estandarizado y rígido, el desacople fue rápido y la migración a SQLite fue rápida.
+
 ## Licencia
 
-Este proyecto utiliza datos abiertos del gobierno de México.
 El código se publica bajo licencia MIT. Consulta el archivo [LICENSE.](LICENSE)
 
 ## Autor
@@ -130,6 +142,6 @@ El código se publica bajo licencia MIT. Consulta el archivo [LICENSE.](LICENSE)
 Proyecto desarrollado por **Rosendo Camal**.
 
 Contacto:
-+ [GitHub](https://github.com/rosendocamal)
-+ [Linkedin](https://linkedin/in/rosendocamal)
++ [GitHub](https://www.github.com/rosendocamal)
++ [Linkedin](https://www.linkedin.com/in/rosendocamal)
 
