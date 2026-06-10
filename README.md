@@ -109,7 +109,7 @@ streamlit run main.py
 En unos segundos se abrirá el navegador, por defecto la de su sistema (**Chrome**, **Firefox**, etc.), y el gestor de inventario estaría en funcionamiento. Si tienes abierto el navegador, tiene que buscar entre las aplicaciones abiertas o en segundo plano su navegador y una vez ahí, selecciona la pestaña de `Sistema de Inventario`.
 
 ![Añadir producto](img/anadir_producto.png)
-![Añadir producto](img/anadir_producto_1.png)
+![Añadir producto](img/anadir_product_1.png)
 ![Añadir producto](img/buscar_producto.png)
 ![Eliminar producto](img/eliminar_producto.png)
 ![Actualizar producto](img/actualizar_producto.png)
@@ -121,9 +121,9 @@ En unos segundos se abrirá el navegador, por defecto la de su sistema (**Chrome
 > [!IMPORTANT]
 > Si lo consideramos oportuno, las siguientes implementaciones se harán realidad.
 
-[] Importación y exportación de datos con formato **CSV** o similares.
-[] Empaquetar nuestra solución para su portabilidad y fácil instalación.
-[] Gestión de usuarios y mejora en los permisos y la seguridad de la información.
+- [] Importación y exportación de datos con formato **CSV** o similares.
+- [] Empaquetar nuestra solución para su portabilidad y fácil instalación.
+- [] Gestión de usuarios y mejora en los permisos y la seguridad de la información.
 
 ## Anédocta
 
