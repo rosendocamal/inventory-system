@@ -2,7 +2,9 @@ import streamlit as st
 from core.inventory import Inventory
 from core.database import DatabaseManager
 
-inventory: Inventory = Inventory(DatabaseManager())
+path: str = 'test/test_db.db'
+storage: DatabaseManager = DatabaseManager(path)
+inventory: Inventory = Inventory(storage)
 
 st.write('# Sistema de Inventario')
 st.write(
