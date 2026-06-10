@@ -78,7 +78,7 @@ class DatabaseManager:
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            category_id = self._get_or_create_category(cursor, data["type"])
+            category_id = self._get_or_create_category(cursor, data["transaction"])
             
             cursor.execute("SELECT id FROM products WHERE code = ?;", (data["product_code"],))
             product_row = cursor.fetchone()

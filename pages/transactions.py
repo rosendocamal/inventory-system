@@ -34,8 +34,8 @@ with st.form('list_products'):
             
             for index, transaction in enumerate(all_transactions):
                 transaction_df['TRANSACCIÓN'].append(index + 1)
-                transaction_df['TIPO'].append(transaction['transaction'])
-                transaction_df['CÓDIGO DE PRODUCTO'].append(transaction['product_code'])
+                transaction_df['TIPO'].append(transaction['category'])
+                transaction_df['CÓDIGO DE PRODUCTO'].append(transaction['affected_product_code'])
                 transaction_df['FECHA DE TRANSACCIÓN'].append(transaction['transaction_date'])
 
             st.dataframe(data=transaction_df)
