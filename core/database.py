@@ -1,6 +1,9 @@
 import sqlite3
 
 class DatabaseManager:
+    """
+    Clase principal para la gestión de la base de datos.
+    """
 
     def __init__(self, db_name: str) -> None:
         self.db_name: str = db_name
@@ -66,6 +69,13 @@ class DatabaseManager:
         return int(cursor.fetchone()["id"])
 
     def save_to_transactions(self, data: dict) -> None:
+        """
+        Guarda las transacciones solicitadas para su incorporación al historial.
+
+        Parámetro:
+        - data (dict): recibe un diccionario con la información y estructura adecuada
+            transacción (ver clase Transaction).
+        """
         with self._get_connection() as conn:
             cursor = conn.cursor()
             category_id = self._get_or_create_category(cursor, data["type"])
@@ -90,6 +100,17 @@ class DatabaseManager:
             conn.commit()
 
     def save_to_products(self, data: dict) -> dict[str, bool | str]:
+        """
+        Guarda los nuevos productos del inventario.
+
+        Parámetro:
+        - data (dict): recibe un diccionario con la información y estructura de un producto
+            (ver clase Product)
+
+        Resultado:
+        - result (dict[str, bool | str]): retorna un diccionario sobre el estado (bool) y el mensaje
+            de resultado o error (str)
+        """
         result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
         required_keys = ['code', 'name', 'description', 'quantity', 'price', 'unity']
         
@@ -114,6 +135,17 @@ class DatabaseManager:
         return result
 
     def delete_from_products(self, data: int) -> dict[str, bool | str]:
+        """
+        Elimina el producto del inventario indicado mediante el código de producto.
+        
+        Parámetro:
+        - data (int): El código de producto a eliminar.
+
+        Resultado:
+        - result (dict[str, bool | str]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación fue exitosa y False si fue
+            lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. 
+        """
         result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
         
         with self._get_connection() as conn:
@@ -150,6 +182,19 @@ class DatabaseManager:
         ]
 
     def search_code_in_products(self, data: int) -> dict[str, bool | str | dict]:
+        """
+        Busca el producto indicado mediante el código de producto dado.
+
+        Parámetro:
+        - data (int): El código de producto a buscar.
+
+        Resultado:
+        - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación fue exitosa y False si fue lo
+            contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
+            operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
+            corresponde con el parámetro indicado.
+        """
         result: dict[str, bool | str | dict] = {'status': False, 'message': 'No se realizó ningún cambio.'}
         
         with self._get_connection() as conn:
@@ -171,6 +216,19 @@ class DatabaseManager:
             return result
 
     def search_name_in_products(self, data: str) -> dict[str, bool | str | dict]:
+        """
+        Busca el producto indicado mediante el nombre del producto dado.
+
+        Parámetro:
+        - data (str): El nombre del producto a buscar.
+
+        Resultado:
+        - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
+            operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
+            corresponde con el parámetro indicado.
+        """
         result: dict[str, bool | str | dict] = {'status': False, 'message': 'No se realizó ningún cambio.'}
         
         with self._get_connection() as conn:
@@ -192,6 +250,20 @@ class DatabaseManager:
             return result
 
     def update_data_in_products(self, data: dict[str, int]) -> dict[str, bool | str]:
+        """
+        Actualiza las existencias del producto indicado.
+
+        Parámetro:
+        - data (dict[str, int]): Ingresa un diccionario con las llaves de «code» y «quantity» correspondientes al código de
+            producto y la cantidad del stock a actualizar, respectivamente.
+
+        Resultado:
+        - result (dict[str, bool | str | dict]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la operación de búsqueda fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Si la
+            operación es exitosa, se añade la clave «product» (dict) con la información y estructura de un producto que
+            corresponde con el parámetro indicado.
+        """
         result: dict[str, bool | str] = {'status': False, 'message': 'No se realizó ningún cambio.'}
         
         with self._get_connection() as conn:
@@ -211,6 +283,16 @@ class DatabaseManager:
         return result
 
     def value_from_products(self) -> dict[str, bool | str | float]:
+        """
+        Realiza la consulta y el cálculo del valor monetario de las
+        existencias del inventario.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si el cálculo fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «stock» para el valor del inventario en formato float.
+        """
         result: dict[str, bool | str | float] = {'status': False, 'message': 'Sin datos para visualizar.', 'stock': 0.00}
         
         with self._get_connection() as conn:
@@ -227,6 +309,16 @@ class DatabaseManager:
         return result
 
     def view_all_in_products(self) -> dict[str, bool | str | list[dict]]:
+        """
+        Realiza la consulta y extrae los datos de cada uno de los
+        productos y lo entrega empaquetado con formato de diccionarios.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «products» para la lista de diccionarios de los productos.
+        """
         result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
         
         with self._get_connection() as conn:
@@ -249,6 +341,16 @@ class DatabaseManager:
             return result
 
     def view_stocks_in_products(self) -> dict[str, bool | str | list[dict]]:
+        """
+        Realiza la consulta y extrae los datos de cada uno de los
+        productos y lo entrega empaquetado con formato de diccionarios.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «products» para la lista de diccionarios de los productos.
+        """
         result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
         
         with self._get_connection() as conn:
@@ -272,6 +374,16 @@ class DatabaseManager:
             return result
 
     def view_all_in_transactions(self) -> dict[str, bool | str | list[dict]]:
+        """
+        Realiza la consulta y extrae los datos de cada uno de los
+        productos y lo entrega empaquetado con formato de diccionarios.
+
+        Resultado:
+        - result (dict[str, bool | str | float]): retorna un diccionario sobre el estado ('status': bool) y el mensaje
+            de resultado o error ('message': str). El estado es True si la extracción fue exitosa y False si 
+            fue lo contrario, mientras que el mensaje o error es un texto personalizado del estado para el usuario. Se añade la
+            key «products» para la lista de diccionarios de los productos.
+        """
         result: dict[str, bool | str | list[dict]] = {'status': False, 'message': 'Sin datos para visualizar.'}
         
         with self._get_connection() as conn:
