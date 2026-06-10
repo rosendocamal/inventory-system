@@ -8,9 +8,11 @@ Solución a *pequeñas* empresas que requieren tener un control de sus productos
 | Conocimiento de hojas de cálculo | Intuitivo y sin experiencia |
 
 
-> [!NOTE] Ambos procesos son manuales, la diferencia radica en la presentación y facilidad.
+> [!NOTE]
+> Ambos procesos son manuales, la diferencia radica en la presentación y facilidad.
 
-> [!TIP] Nuestra solución permite escalabilidad y facilidad, mientras las hojas son complementos, no sustituto de ellas.
+> [!TIP]
+> Nuestra solución permite escalabilidad y facilidad, mientras las hojas son complementos, no sustituto de ellas.
 
 Nuestra ayuda le facilitará realizar la transición de procesos manuales, como el uso de una libreta o de hojas de cálculo, a la preparación de usos de sistemas de ERP, aquí usted explora sin tanta complejidad y sin abrumadora cantidad de configuraciones y funciones. Esta es su solución definitiva o su escuela de preparación a sistemas ERP, lo importante es la mentalidad, no el conocimiento técnico de estos sistemas de inventarios.
 
