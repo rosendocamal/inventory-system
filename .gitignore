@@ -13,3 +13,6 @@ wheels/
 .pytest_cache
 
 ui/__pycache__
+
+# Databases
+*.db
