@@ -47,8 +47,7 @@ El gestor ha sido desarrollado empleando el lenguaje de programación **Python**
 
 Se implementó una arquitectura en **capas** (*UI, LÓGICA DE NEGOCIO, PERSISTENCIA*) para garantizar que la base de datos pueda ser sustituida en el futuro o añadir características globales progresivamente sin llegar a comprometer el sistema entero o la interfaz de usuario.
 
-```
-mermaid
+```mermaid
 graph LR
 
     UI["Usuario"]
